@@ -2,7 +2,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from ..database.database import Open, Close
+import uvicorn
 
 load_dotenv()
 DB_USERNAME = os.getenv("DB_USERNAME")
@@ -30,8 +30,6 @@ async def createUser():
     #Create a new user and save it in the database
     pass
 
-## ONLY FOR TEST AND SHOW
-@app.get("/connectdb")
-async def connectDb():
-    Open()
-    Close()
+print("Running uvicorn")
+uvicorn.run(app, host="0.0.0.0", port=3001)
+print("rainbow")
