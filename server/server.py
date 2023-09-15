@@ -1,6 +1,10 @@
 import os
 from fastapi import FastAPI
 from database.database import Open, Close
+from config.config import Config
+from sqlalchemy import Connection, text, select
+
+
 
 def setupServerRoutes(app:FastAPI):
     @app.get("/")
@@ -9,7 +13,7 @@ def setupServerRoutes(app:FastAPI):
 
     @app.get("/users")
     async def getAllUsers():
-        #Returns all users from the database
+        config = Config()
         pass
 
     @app.post("/users")
