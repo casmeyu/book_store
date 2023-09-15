@@ -2,39 +2,25 @@
 # This Module has the responsability to Open and Close connections to the database
 ###
 from sqlalchemy import create_engine, Connection
+from config.config import DbConfig
 
 # Opens a connection to the database based on the ENV VARIABLES
-def Open(user:str, pwd:str, uri:str, port:str, db_name:str):
-    res = {
-        "success": False,
-        "error": None,
-        "result": None
-    }
-    connection_string = f"mysql+mysqlconnector://{user}:{pwd}@{uri}:{port}/{db_name}"
+def Open(config:DbConfig):
+    connection_string = f"mysql+mysqlconnector://{config.usr}:{config.pwd}@{config.host}:{config.port}/{config.name}"
     engine = create_engine(connection_string, echo=True)
 
     try:
         connection = engine.connect()
-        res.success = True
-        res.result = connection
+        return connection
     except Exception as ex:
         print("[DATABASE] (Open) - An error occurred while connecting to the database", ex)
-        res.error = ex
-    
-    return res
+        return None
 
 # Closes the connection to the database
 def Close(openConn:Connection):
-    res = {
-        "success": False,
-        "error": None,
-        "result": None
-    }
     try:
         openConn.close()
-        res.success = True
+        return True
     except Exception as ex:
         print("[DATABASE] (Open) - An error occurred while connecting to the database", ex)
-        res.error = ex
-    
-    return res
+        return False
