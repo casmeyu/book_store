@@ -50,7 +50,7 @@ def GetDatabaseTables(openSession:Session):
         result = []
         db_tables = openSession.execute(text("SHOW TABLES;"))
         for row in db_tables.all():
-            result.app(row._data)
+            result.append(row._data)
         return result
     except Exception as ex:
         print("[Database] (GetDatabaseTables) - An error occurred while getting all the database table names", ex)
