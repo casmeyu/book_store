@@ -47,9 +47,11 @@ def CloseSession(openSession:Session):
 # Returns all the tables found in the database
 def GetDatabaseTables(openSession:Session):
     try:
+        result = []
         db_tables = openSession.execute(text("SHOW TABLES;"))
         for row in db_tables.all():
-            return row._data
+            result.app(row._data)
+        return result
     except Exception as ex:
         print("[Database] (GetDatabaseTables) - An error occurred while getting all the database table names", ex)
         return None
