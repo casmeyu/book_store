@@ -1,32 +1,34 @@
 import os
+
 from fastapi import FastAPI
 from database.database import Open, Close
 from config.config import Config
 from sqlalchemy import Connection, text, select, insert
-from models.Product import Product
+from models.Product import Product, Product_pydantic
 
 
 def setupServerRoutes(app:FastAPI):
     @app.get("/")
     async def root():
-        return {"message": "Book store home page"}
+        return {"message": "Book store home page!"}
 
     @app.get("/products")
-    async def getAllProducts():
-        config = Config()
-        print("JOJOJO")
-        pass
-
-    @app.post("/products")
-    async def createProducts():
-        #Create a new product and save it in the database
+    async def getAllProducts(prod : Product_pydantic):
         config = Config()
         conn = Open(config.DbConfig)
-        name = "papa2"
-        price = 152
-        newproduct = Product(name, price)
+        print("JOJOJO")
+        return conn.execute(Product_pydantic.select()).fetchall()
+
+
+    @app.post("/products")
+    async def createProducts(prod : Product_pydantic):
+        #Create a new product and save it in the database
+        print(prod)
+        config = Config()
+        conn = Open(config.DbConfig)
+        newproduct = Product(prod.name, prod.price)
         print(newproduct)
-        conn.execute(insert(Product).values(name = name, price = price))
+        conn.execute(insert(Product).values(name = prod.name, price = prod.price))
         conn.commit()
         Close(conn)
 
