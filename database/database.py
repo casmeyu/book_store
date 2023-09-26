@@ -1,12 +1,14 @@
 ###
 # This Module has the responsability to Open and Close connections to the database
 ###
-from sqlalchemy import create_engine, Connection
+from sqlalchemy import create_engine, Connection, MetaData
 from config.config import DbConfig
+
+meta = MetaData()
 
 # Opens a connection to the database based on the ENV VARIABLES
 def Open(config:DbConfig):
-    connection_string = f"mysql+mysqlconnector://{config.usr}:{config.pwd}@{config.host}:{config.port}/{config.name}"
+    connection_string = f"mysql+mysqlconnector://{config.usr}:{config.pwd}@{config.host}:{config.port}/{config.name}" 
     engine = create_engine(connection_string, echo=True)
 
     try:

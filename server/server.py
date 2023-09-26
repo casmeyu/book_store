@@ -1,38 +1,45 @@
 import os
-
 from fastapi import FastAPI
-from database.database import Open, Close
+from sqlalchemy import select, insert, create_engine
+
+from database.database import Open, Close, meta
 from config.config import Config
-from sqlalchemy import Connection, text, select, insert
-from models.Product import Product, Product_pydantic
+from models.product_model import Product
+from schema.product_schema import Product_pydantic
 
-
+ 
 def setupServerRoutes(app:FastAPI):
     @app.get("/")
     async def root():
         return {"message": "Book store home page!"}
 
     @app.get("/products")
-    async def getAllProducts(prod : Product_pydantic):
+    async def getAllProducts():
         config = Config()
         conn = Open(config.DbConfig)
         print("JOJOJO")
-        return conn.execute(Product_pydantic.select()).fetchall()
-
+        result = conn.execute(select(Product)).fetchall()
+        print(result)
+        
+    
 
     @app.post("/products")
-    async def createProducts(prod : Product_pydantic):
+    async def create_product(prod : Product_pydantic):
         #Create a new product and save it in the database
-        print(prod)
         config = Config()
         conn = Open(config.DbConfig)
         newproduct = Product(prod.name, prod.price)
-        print(newproduct)
-        conn.execute(insert(Product).values(name = prod.name, price = prod.price))
+        print("123")
+        result = conn.execute(insert(Product).values(name = prod.name, price = prod.price))
         conn.commit()
-        Close(conn)
+        print(result.lastrowid)
+        lastrowid = result.lastrowid
+        print("ok")
+
 
 def createServer():
     app = FastAPI()
     setupServerRoutes(app)
+    engine = create_engine(f"mysql+mysqlconnector://root:asdasd@127.0.0.1:3306/book_db")
+    meta.create_all(engine)
     return app
