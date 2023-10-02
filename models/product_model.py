@@ -1,18 +1,8 @@
 from pydantic import BaseModel
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Sequence, Float, Connection
-from database.database import meta, Open, Close
+from database.database import meta
 from config.config import DbConfig, Config
-
-
-#product = Table(
-#    "products", meta,
-#    Column("id", Integer, primary_key=True, nullable=False),
-#    Column("name", String(255), nullable=False),
-#    Column("price", Integer, nullable=False)
-#)
-#config = Config()
-#meta.create_all(Open(config.DbConfig))
 
 Base = declarative_base(metadata=meta)
 

@@ -1,7 +1,9 @@
 import os
 from fastapi import FastAPI
 from sqlalchemy import select, insert, create_engine
-
+from config.config import Config
+from models.product_model import Product
+from schema.product_schema import Product_pydantic
 from database.database import (
     OpenConnection,
     OpenSession,
@@ -10,9 +12,6 @@ from database.database import (
     GetDatabaseTables,
     meta
 )
-from config.config import Config
-from models.product_model import Product
-from schema.product_schema import Product_pydantic
 
  
 def setupServerRoutes(app:FastAPI):
@@ -30,25 +29,26 @@ def setupServerRoutes(app:FastAPI):
     @app.get("/products")
     async def getAllProducts():
         config = Config()
-        conn = OpenConnection(config.DbConfig)
+        session = OpenSession(config.DbConfig)
         print("JOJOJO")
-        result = conn.execute(select(Product)).fetchall()
+        result = session.query(Product).all()    
         print(result)
+        return(result)
         
     
-
-    @app.post("/products")
+    @app.post("/products", response_model=Product_pydantic)
     async def create_product(prod : Product_pydantic):
         #Create a new product and save it in the database
         config = Config()
-        conn = OpenConnection(config.DbConfig)
+        session = OpenSession(config.DbConfig)
         newproduct = Product(prod.name, prod.price)
-        print("123")
-        result = conn.execute(insert(Product).values(name = prod.name, price = prod.price))
-        conn.commit()
-        print(result.lastrowid)
-        lastrowid = result.lastrowid
+        #result = conn.execute(insert(Product).values(name = prod.name, price = prod.price))
+        result = session.add(newproduct)
+        session.commit()
+        print(result)
+        CloseSession(session)
         print("ok")
+        return (prod)
 
 
 def createServer():
