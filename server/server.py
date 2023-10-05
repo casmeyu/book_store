@@ -10,6 +10,8 @@ from database.database import (
 from config.config import Config
 from sqlalchemy import Connection, text, select, insert
 from models.Product import Product
+from models.Venta import Venta
+from schema.venta_schema import NewVentaSchema
 
 
 def setupServerRoutes(app:FastAPI):
@@ -42,6 +44,23 @@ def setupServerRoutes(app:FastAPI):
         conn.execute(insert(Product).values(name = name, price = price))
         conn.commit()
         CloseConnection(conn)
+
+
+    # Ventas
+    @app.get("/ventas")
+    async def getAllVentas():
+        config = Config()
+        session = OpenSession(config.DbConfig)
+        res = session.query(Venta)
+        print(res)
+        CloseSession(session)
+        return res
+
+    @app.post("/ventas", response_model=NewVentaSchema)
+    async def createVenta(ventaInfo: NewVentaSchema):
+        print("Create venta with info:")
+        print(ventaInfo)
+        return(ventaInfo)
 
 def createServer():
     app = FastAPI()

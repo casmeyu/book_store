@@ -1,6 +1,6 @@
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship, Mapped
 from sqlalchemy import Table, Column, Integer, Float, Sequence, ForeignKey, DateTime
-from Product import Product
+from models.Product import Product
 import datetime
 
 Base = declarative_base()
@@ -8,8 +8,8 @@ Base = declarative_base()
 venta_product = Table(
     "venta_product",
     Base.metadata,
-    Column("venta_id", ForeignKey("ventas.id"), primary_key=True),
-    Column("product_id", ForeignKey("product.id"), primary_key=True),
+    Column("venta_id", Integer, ForeignKey("ventas.id"), primary_key=True),
+    Column("product_id", Integer, ForeignKey("products.id"), primary_key=True),
     Column("quantity", Integer),
     Column("price", Float)
 )
@@ -25,7 +25,7 @@ class Venta(Base):
     user_id:int = ForeignKey(("products.id"))
     date:datetime = Column("date", DateTime),
     price:float = Column(Integer, nullable=False)
-    products:list[Product] = relationship(secondary="venta_product")
+    products:Mapped[list[Product]] = relationship(secondary="venta_product")
 
     def __init__(self, user_id:int, products:list[VentaProduct]):
         finalPrice:float = 0.0
@@ -34,7 +34,7 @@ class Venta(Base):
         for item in products:
             self.products.append(item.product)
             finalPrice += (item.product.price * item.quantity)
-        print(f'Created Venta user {self.user_id} - {self.date}\n{self.products}')
+        print(f'Created Venta\nuser {self.user_id} - {self.date}\n{self.products}')
 
     def __repr__(self):
-        return f"<Venta(id={self.id}, user_id='{self.user_id}', price='{self.price}')>"
+        return f"<Venta(id={self.id}, user_id='{self.user_id}', date={self.date}, price='{self.price}, products={[item.id for item in self.products]}')>"
