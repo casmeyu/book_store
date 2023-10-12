@@ -1,11 +1,11 @@
 from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime
 
 
-class pydantic_user(BaseModel):
-    user_name : str
+class User_pydantic(BaseModel):
+    id : Optional[int]
+    username : str
     password : str
-    created_at : datetime
-    updated_at : datetime
-    deleted_at : datetime
+    is_active : bool
     

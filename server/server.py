@@ -4,6 +4,8 @@ from sqlalchemy import select, insert, create_engine
 from config.config import Config
 from models.product_model import Product
 from schema.product_schema import Product_pydantic
+from models.user_model import User
+from schema.user_schema import User_pydantic
 from database.database import (
     OpenConnection,
     OpenSession,
@@ -30,7 +32,6 @@ def setupServerRoutes(app:FastAPI):
     async def getAllProducts():
         config = Config()
         session = OpenSession(config.DbConfig)
-        print("JOJOJO")
         result = session.query(Product).all()    
         print(result)
         return(result)
@@ -42,14 +43,23 @@ def setupServerRoutes(app:FastAPI):
         config = Config()
         session = OpenSession(config.DbConfig)
         newproduct = Product(prod.name, prod.price)
-        #result = conn.execute(insert(Product).values(name = prod.name, price = prod.price))
-        result = session.add(newproduct)
+        session.add(newproduct)
         session.commit()
-        print(result)
         CloseSession(session)
-        print("ok")
         return (prod)
 
+    @app.post("/users", response_model=User_pydantic)
+    async def create_user(user : User_pydantic):
+        #Create a new user and save it in the database
+        config = Config()
+        session = OpenSession(config.DbConfig)
+        newuser = User(user.username, user.password, user.is_active,)
+        result = session.add(newuser)
+        print (result)
+        session.commit()
+        print (result)
+        CloseSession(session)
+        return(user)
 
 def createServer():
     app = FastAPI()

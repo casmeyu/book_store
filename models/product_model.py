@@ -1,8 +1,7 @@
-from pydantic import BaseModel
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Sequence, Float, Connection
 from database.database import meta
-from config.config import DbConfig, Config
+
 
 Base = declarative_base(metadata=meta)
 

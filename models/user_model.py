@@ -1,31 +1,24 @@
 from sqlalchemy.orm import declarative_base
-from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, Sequence
+from sqlalchemy import Column, Integer, String, Sequence, Boolean
 from datetime import datetime
+from database.database import meta
 
-Base = declarative_base()
+Base = declarative_base(metadata=meta)
 
 
-class User_model(Base):
-    __tablename__ = "products"
+class User(Base):
+    __tablename__ = "users"
 
     id = Column(Integer, Sequence("user_id_seq"), primary_key=True, nullable=False)
-    username = Column(String, nullable=False)
-    password = Column(String, nullable=False)
-    created_at = Column(datetime.now, nullable=False)
-    updated_at = Column(datetime.now, nullable=False)
-    deleted_at = Column(datetime.now, nullable=True)
+    username = Column(String(200), nullable=False)
+    password = Column(String(200), nullable=False)
+    is_active = Column(Boolean, default=True)
     
 
-    def __init__(self, name, username, password, created_at, updated_at, deleted_at):
+    def __init__(self, username, password, is_active):
         self.username = username
         self.password = password
-        self.created_at = created_at
-        self.updated_at = updated_at
-        self.deleted_at = deleted_at
+        self.is_active = is_active
 
     def __repr__(self):
-        return f"<Product(id={self.id}, username='{self.username}', password='{self.password}', created_at='{self.created_at}', updated_at='{self.updated_at}', deleted_at='{self.deleted_atted_at}')>"
-
-class pydantic_user(BaseModel):
-    name = str
+        return f"<User(id={self.id}, username='{self.username}', password='{self.password}', is_active='{self.is_active}')>"
