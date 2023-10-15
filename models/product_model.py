@@ -1,16 +1,17 @@
-from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy import Column, Integer, String, Sequence, Float, create_engine
+from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, String, Sequence, Float, Connection
+from database.database import meta
 
 
-Base = declarative_base()
+Base = declarative_base(metadata=meta)
 
 
 class Product(Base):
     __tablename__ = "products"
 
     id = Column(Integer, Sequence("product_id_seq"), primary_key=True, nullable=False)
-    name = Column(String, nullable=False)
-    price = Column(Integer, nullable=False)
+    name = Column(String(200), nullable=False)
+    price = Column(Float, nullable=False)
 
     def __init__(self, name, price):
         self.name = name

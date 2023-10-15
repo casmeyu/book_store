@@ -1,23 +1,26 @@
 import os
 from fastapi import FastAPI
+from sqlalchemy import select, insert, create_engine
+from config.config import Config
+from models.product_model import Product
+from schema.product_schema import Product_pydantic
+from models.user_model import User
+from models.Venta import Venta
+from schema.venta_schema import NewVentaSchema
+from schema.user_schema import User_pydantic
 from database.database import (
     OpenConnection,
     OpenSession,
     CloseConnection,
     CloseSession,
-    GetDatabaseTables
+    GetDatabaseTables,
+    meta
 )
-from config.config import Config
-from sqlalchemy import Connection, text, select, insert
-from models.Product import Product
-from models.Venta import Venta
-from schema.venta_schema import NewVentaSchema
-
 
 def setupServerRoutes(app:FastAPI):
     @app.get("/")
     async def root():
-        return {"message": "Book store home page"}
+        return {"message": "Book store home page!"}
 
     @app.get("/api/db/tables")
     async def getDbTables():
@@ -29,21 +32,35 @@ def setupServerRoutes(app:FastAPI):
     @app.get("/products")
     async def getAllProducts():
         config = Config()
-        print("JOJOJO")
-        pass
-
-    @app.post("/products")
-    async def createProducts():
+        session = OpenSession(config.DbConfig)
+        result = session.query(Product).all()    
+        print(result)
+        return(result)
+        
+    
+    @app.post("/products", response_model=Product_pydantic)
+    async def create_product(prod : Product_pydantic):
         #Create a new product and save it in the database
         config = Config()
-        conn = OpenConnection(config.DbConfig)
-        name = "papa2"
-        price = 152
-        newproduct = Product(name, price)
-        print(newproduct)
-        conn.execute(insert(Product).values(name = name, price = price))
-        conn.commit()
-        CloseConnection(conn)
+        session = OpenSession(config.DbConfig)
+        newproduct = Product(prod.name, prod.price)
+        session.add(newproduct)
+        session.commit()
+        CloseSession(session)
+        return (prod)
+
+    @app.post("/users", response_model=User_pydantic)
+    async def create_user(user : User_pydantic):
+        #Create a new user and save it in the database
+        config = Config()
+        session = OpenSession(config.DbConfig)
+        newuser = User(user.username, user.password, user.is_active,)
+        result = session.add(newuser)
+        print (result)
+        session.commit()
+        print (result)
+        CloseSession(session)
+        return(user)
 
 
     # Ventas
@@ -65,4 +82,6 @@ def setupServerRoutes(app:FastAPI):
 def createServer():
     app = FastAPI()
     setupServerRoutes(app)
+    engine = create_engine(f"mysql+mysqlconnector://root:asdasd@127.0.0.1:3306/book_db")
+    meta.create_all(engine)
     return app

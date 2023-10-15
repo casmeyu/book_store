@@ -2,8 +2,9 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship, Mapped
 from sqlalchemy import Table, Column, Integer, Float, Sequence, ForeignKey, DateTime
 from models.Product import Product
 import datetime
+from database.database import meta
 
-Base = declarative_base()
+Base = declarative_base(metadata=meta) # Use a single BASE instead of importing meta
 
 venta_product = Table(
     "venta_product",
