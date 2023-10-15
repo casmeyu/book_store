@@ -1,5 +1,5 @@
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, Sequence, Float, Connection
+from sqlalchemy import Column, Integer, String, Float, Connection
 from database.database import meta
 
 
@@ -9,7 +9,7 @@ Base = declarative_base(metadata=meta)
 class Product(Base):
     __tablename__ = "products"
 
-    id = Column(Integer, Sequence("product_id_seq"), primary_key=True, nullable=False)
+    id = Column(Integer, autoincrement=True, primary_key=True, nullable=False)
     name = Column(String(200), nullable=False)
     price = Column(Float, nullable=False)
 

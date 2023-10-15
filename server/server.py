@@ -43,6 +43,7 @@ def setupServerRoutes(app:FastAPI):
         config = Config()
         session = OpenSession(config.DbConfig)
         newproduct = Product(prod.name, prod.price)
+        
         session.add(newproduct)
         session.commit()
         CloseSession(session)
@@ -64,6 +65,6 @@ def setupServerRoutes(app:FastAPI):
 def createServer():
     app = FastAPI()
     setupServerRoutes(app)
-    engine = create_engine(f"mysql+mysqlconnector://root:asdasd@127.0.0.1:3306/book_db")
+    engine = create_engine(f"mysql+mysqlconnector://casmeyu:qwe123@127.0.0.1:3306/book_store")
     meta.create_all(engine)
     return app
