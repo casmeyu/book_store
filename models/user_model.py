@@ -1,15 +1,11 @@
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, Sequence, Boolean
-from datetime import datetime
-from database.database import meta
-
-Base = declarative_base(metadata=meta)
+from sqlalchemy import Column, Integer, String, Boolean
+from database.database import Base
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, Sequence("user_id_seq"), primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False)
     username = Column(String(200), nullable=False)
     password = Column(String(200), nullable=False)
     is_active = Column(Boolean, default=True)

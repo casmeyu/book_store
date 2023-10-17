@@ -6,10 +6,10 @@ from models.product_model import Product
 from schema.product_schema import Product_pydantic
 from models.user_model import User
 from schema.user_schema import User_pydantic
+from models.rol_model import Rol
+from schema.rol_schema import Rol_pydantic
 from database.database import (
-    OpenConnection,
     OpenSession,
-    CloseConnection,
     CloseSession,
     GetDatabaseTables,
     meta
@@ -54,12 +54,20 @@ def setupServerRoutes(app:FastAPI):
         config = Config()
         session = OpenSession(config.DbConfig)
         newuser = User(user.username, user.password, user.is_active,)
-        result = session.add(newuser)
-        print (result)
+        session.add(newuser)
         session.commit()
-        print (result)
         CloseSession(session)
         return(user)
+    
+    @app.post("/roles", response_model=Rol_pydantic)
+    async def create_rol(rol : Rol_pydantic):
+        config = Config()
+        session = OpenSession(config.DbConfig)
+        newrol = Rol(rol.rol)
+        session.add(newrol)
+        session.commit()
+        CloseSession(session)
+        return(rol)
 
 def createServer():
     app = FastAPI()

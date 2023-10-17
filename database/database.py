@@ -2,10 +2,11 @@
 # This Module has the responsability to Open and Close connections to the database
 ###
 from sqlalchemy import create_engine, Connection, text, MetaData
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, declarative_base
 from config.config import DbConfig
 
 meta = MetaData()
+Base = declarative_base(metadata=meta)
 
 # Opens a connection to the database based on the ENV VARIABLES
 def OpenConnection(config:DbConfig):
