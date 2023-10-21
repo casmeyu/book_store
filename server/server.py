@@ -75,13 +75,20 @@ def setupServerRoutes(app:FastAPI):
 
     @app.post("/ventas", response_model=NewVentaSchema)
     async def createVenta(ventaInfo: NewVentaSchema):
+        config = Config()
         print("Create venta with info:")
-        print(ventaInfo)
-        return(ventaInfo)
+        session = OpenSession(config.DbConfig)
+        newVenta = Venta(ventaInfo.user_id, ventaInfo.products)
+        print(newVenta)
+        session.add(newVenta)
+        # Anadir relaciones con productos
+        session.commit()
+        CloseSession(session)
+        return(newVenta)
 
 def createServer():
     app = FastAPI()
     setupServerRoutes(app)
-    engine = create_engine(f"mysql+mysqlconnector://root:asdasd@127.0.0.1:3306/book_db")
+    engine = create_engine(f"mysql+mysqlconnector://casmeyu:qwe123@127.0.0.1:3306/book_store")
     meta.create_all(engine)
     return app
