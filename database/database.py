@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, Connection, text, MetaData
 from sqlalchemy.orm import Session, declarative_base
 from config.config import DbConfig
 
+
 meta = MetaData()
 Base = declarative_base(metadata=meta)
 

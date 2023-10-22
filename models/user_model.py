@@ -2,8 +2,9 @@
 from sqlalchemy import Column, Table, Integer, String, Boolean
 from database.database import Base
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import declarative_base, relationship, Mapped
+from sqlalchemy.orm import relationship
 from database.database import Base
+
 
 user_role = Table(
     "user_role",

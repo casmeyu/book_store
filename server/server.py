@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from sqlalchemy import select, insert, create_engine
-from sqlalchemy.orm import lazyload, joinedload
+from sqlalchemy.orm import joinedload
 from config.config import Config
 from models.product_model import Product
 from schema.product_schema import Product_pydantic
@@ -9,12 +9,19 @@ from models.user_model import User, user_role
 from schema.user_schema import User_pydantic
 from models.user_model import Rol
 from schema.rol_schema import Rol_pydantic
+from passlib.context import CryptContext
 from database.database import (
     OpenSession,
     CloseSession,
     GetDatabaseTables,
     meta
 )
+#password hash
+bcript_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_password_hash(password):
+    return bcript_context.hash(password)
+
 
  
 def setupServerRoutes(app:FastAPI):
@@ -55,13 +62,14 @@ def setupServerRoutes(app:FastAPI):
         config = Config()
         session = OpenSession(config.DbConfig)
         new_user = User(user.username, user.password, user.is_active)
+        hash_password = get_password_hash(new_user.password)
+        new_user.password = hash_password
         dbRoles = session.query(Rol.id).filter(Rol.id.in_(user.roles)).all()
         print("DATABASE ROLES")
         print(dbRoles)
         if len(dbRoles) != len(user.roles):
             print("ERROR FATAL LOS ROLES ESTAN MAL")
             return "error with roles"
-
         session.add(new_user)
         db_user:User = session.query(User.id).where(User.username == user.username).first() # Grab user from db
         for r in user.roles:
@@ -69,14 +77,13 @@ def setupServerRoutes(app:FastAPI):
         session.commit()
         CloseSession(session)
         userRfreshed = session.query(User).options(joinedload(User.roles)).where(User.username == user.username).first()
-        print("USER REFRESHED")
         print(userRfreshed)
-        print("USER ROLES?")
         print(userRfreshed.roles)
         return(user)
     
     @app.post("/roles", response_model=Rol_pydantic)
     async def create_rol(rol : Rol_pydantic):
+        #Create a new product and save it in the database
         config = Config()
         session = OpenSession(config.DbConfig)
         newrol = Rol(rol.name)
@@ -88,6 +95,6 @@ def setupServerRoutes(app:FastAPI):
 def createServer():
     app = FastAPI()
     setupServerRoutes(app)
-    engine = create_engine(f"mysql+mysqlconnector://casmeyu:qwe123@127.0.0.1:3306/book_store")
+    engine = create_engine(f"mysql+mysqlconnector://root:asdasd@127.0.0.1:3306/book_db")
     meta.create_all(engine)
     return app
