@@ -1,12 +1,13 @@
 import os
 from fastapi import FastAPI
 from sqlalchemy import select, insert, create_engine
+from sqlalchemy.orm import lazyload, joinedload
 from config.config import Config
 from models.product_model import Product
 from schema.product_schema import Product_pydantic
-from models.user_model import User
+from models.user_model import User, user_role
 from schema.user_schema import User_pydantic
-from models.rol_model import Rol
+from models.user_model import Rol
 from schema.rol_schema import Rol_pydantic
 from database.database import (
     OpenSession,
@@ -53,17 +54,32 @@ def setupServerRoutes(app:FastAPI):
         #Create a new user and save it in the database
         config = Config()
         session = OpenSession(config.DbConfig)
-        newuser = User(user.username, user.password, user.is_active,)
-        session.add(newuser)
+        new_user = User(user.username, user.password, user.is_active)
+        dbRoles = session.query(Rol.id).filter(Rol.id.in_(user.roles)).all()
+        print("DATABASE ROLES")
+        print(dbRoles)
+        if len(dbRoles) != len(user.roles):
+            print("ERROR FATAL LOS ROLES ESTAN MAL")
+            return "error with roles"
+
+        session.add(new_user)
+        db_user:User = session.query(User.id).where(User.username == user.username).first() # Grab user from db
+        for r in user.roles:
+            session.execute(user_role.insert().values(user_id=db_user.id, role_id=r))
         session.commit()
         CloseSession(session)
+        userRfreshed = session.query(User).options(joinedload(User.roles)).where(User.username == user.username).first()
+        print("USER REFRESHED")
+        print(userRfreshed)
+        print("USER ROLES?")
+        print(userRfreshed.roles)
         return(user)
     
     @app.post("/roles", response_model=Rol_pydantic)
     async def create_rol(rol : Rol_pydantic):
         config = Config()
         session = OpenSession(config.DbConfig)
-        newrol = Rol(rol.rol)
+        newrol = Rol(rol.name)
         session.add(newrol)
         session.commit()
         CloseSession(session)
@@ -72,6 +88,6 @@ def setupServerRoutes(app:FastAPI):
 def createServer():
     app = FastAPI()
     setupServerRoutes(app)
-    engine = create_engine(f"mysql+mysqlconnector://root:asdasd@127.0.0.1:3306/book_db")
+    engine = create_engine(f"mysql+mysqlconnector://casmeyu:qwe123@127.0.0.1:3306/book_store")
     meta.create_all(engine)
     return app
