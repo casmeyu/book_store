@@ -19,17 +19,19 @@ class User(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     username = Column(String(200), nullable=False, unique=True)
     password = Column(String(200), nullable=False)
+    created_at = Column(String(40))
     is_active = Column(Boolean, default=True)
     roles = relationship("Rol", secondary="user_role", back_populates="users")
     
 
-    def __init__(self, username, password, is_active):
+    def __init__(self, username, password, created_at, is_active):
         self.username = username
         self.password = password
+        self.created_at = created_at
         self.is_active = is_active
 
     def __repr__(self):
-        return f"<User(id={self.id}, username='{self.username}', password='{self.password}', is_active='{self.is_active}'), roles='{self.roles}'>"
+        return f"<User(id={self.id}, username='{self.username}', password='{self.password}', created_at='{self.created_at}', is_active='{self.is_active}'), roles='{self.roles}'>"
 
 class Rol(Base):
     __tablename__ = "roles"

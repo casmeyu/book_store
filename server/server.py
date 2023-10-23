@@ -10,12 +10,14 @@ from schema.user_schema import User_pydantic
 from models.user_model import Rol
 from schema.rol_schema import Rol_pydantic
 from passlib.context import CryptContext
+import datetime
 from database.database import (
     OpenSession,
     CloseSession,
     GetDatabaseTables,
     meta
 )
+
 #password hash
 bcript_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -44,7 +46,6 @@ def setupServerRoutes(app:FastAPI):
         print(result)
         return(result)
         
-    
     @app.post("/products", response_model=Product_pydantic)
     async def create_product(prod : Product_pydantic):
         #Create a new product and save it in the database
@@ -61,12 +62,13 @@ def setupServerRoutes(app:FastAPI):
         #Create a new user and save it in the database
         config = Config()
         session = OpenSession(config.DbConfig)
-        new_user = User(user.username, user.password, user.is_active)
+        new_user = User(user.username, user.password, user.created_at, user.is_active)
+        #password hash
         hash_password = get_password_hash(new_user.password)
         new_user.password = hash_password
+        #created_at
+        new_user.created_at = datetime.datetime.now()
         dbRoles = session.query(Rol.id).filter(Rol.id.in_(user.roles)).all()
-        print("DATABASE ROLES")
-        print(dbRoles)
         if len(dbRoles) != len(user.roles):
             print("ERROR FATAL LOS ROLES ESTAN MAL")
             return "error with roles"
@@ -76,9 +78,6 @@ def setupServerRoutes(app:FastAPI):
             session.execute(user_role.insert().values(user_id=db_user.id, role_id=r))
         session.commit()
         CloseSession(session)
-        userRfreshed = session.query(User).options(joinedload(User.roles)).where(User.username == user.username).first()
-        print(userRfreshed)
-        print(userRfreshed.roles)
         return(user)
     
     @app.post("/roles", response_model=Rol_pydantic)
