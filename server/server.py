@@ -82,7 +82,7 @@ def setupServerRoutes(app:FastAPI):
     
     @app.post("/roles", response_model=Rol_pydantic)
     async def create_rol(rol : Rol_pydantic):
-        #Create a new product and save it in the database
+        #Create a new rol and save it in the database
         config = Config()
         session = OpenSession(config.DbConfig)
         newrol = Rol(rol.name)
