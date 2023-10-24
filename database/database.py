@@ -4,10 +4,23 @@
 from sqlalchemy import create_engine, Connection, text, MetaData
 from sqlalchemy.orm import Session, declarative_base
 from config.config import DbConfig
+from passlib.context import CryptContext
 
 
 meta = MetaData()
 Base = declarative_base(metadata=meta)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+#Hash function
+class Hasher:
+
+    @staticmethod
+    def get_hash_password(plain_password):
+        return pwd_context.hash(plain_password)
+    
+    @staticmethod
+    def verify_password(plain_password, hash_password):
+        return pwd_context.verify(plain_password, hash_password)
 
 # Opens a connection to the database based on the ENV VARIABLES
 def OpenConnection(config:DbConfig):

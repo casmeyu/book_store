@@ -15,15 +15,9 @@ from database.database import (
     OpenSession,
     CloseSession,
     GetDatabaseTables,
-    meta
+    meta,
+    Hasher
 )
-
-#password hash
-bcript_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def get_password_hash(password):
-    return bcript_context.hash(password)
-
 
  
 def setupServerRoutes(app:FastAPI):
@@ -45,6 +39,14 @@ def setupServerRoutes(app:FastAPI):
         result = session.query(Product).all()    
         print(result)
         return(result)
+    
+    @app.get("/products/{product_id}", response_model=Product_pydantic)
+    async def get_product_by_id(prod : Product_pydantic):
+        config = Config()
+        session = OpenSession(config.DbConfig)
+        product_by_id = Product(prod.name, prod.price)
+        session.get
+
         
     @app.post("/products", response_model=Product_pydantic)
     async def create_product(prod : Product_pydantic):
@@ -64,7 +66,7 @@ def setupServerRoutes(app:FastAPI):
         session = OpenSession(config.DbConfig)
         new_user = User(user.username, user.password, user.created_at, user.is_active)
         #password hash
-        hash_password = get_password_hash(new_user.password)
+        hash_password = Hasher.get_hash_password(new_user.password)
         new_user.password = hash_password
         #created_at
         new_user.created_at = datetime.datetime.now()
