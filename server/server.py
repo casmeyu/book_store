@@ -8,6 +8,8 @@ from models.user_model import User, user_role
 from schema.user_schema import User_pydantic
 from models.user_model import Rol
 from schema.rol_schema import Rol_pydantic
+from models.book_model import Book
+from schema.book_schema import Book_pydantic
 import datetime
 from database.database import (
     OpenSession,
@@ -44,6 +46,14 @@ def setupServerRoutes(app:FastAPI):
         session = OpenSession(config.DbConfig)
         product_by_id = session
         session.get
+
+    @app.get("/books")
+    async def getAllBooks():
+        config = Config()
+        session = OpenSession(config.DbConfig)
+        result = session.query(Book).all()    
+        print(result)
+        return(result)
 
     @app.post("/products", response_model=Product_pydantic)
     async def create_product(prod : Product_pydantic):
@@ -86,6 +96,17 @@ def setupServerRoutes(app:FastAPI):
         session.commit()
         CloseSession(session)
         return(rol)
+    
+    @app.post("/books", response_model=Book_pydantic)
+    async def create_book(book : Book_pydantic):
+        #Create a new book and save it in the database
+        config = Config()
+        session = OpenSession(config.DbConfig)
+        newbook = Book(book.isbn, book.title, book.author, book.publisher, book.price)
+        session.add(newbook)
+        session.commit()
+        CloseSession(session)
+        return(book)
 
 def createServer():
     app = FastAPI()
