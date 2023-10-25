@@ -12,7 +12,7 @@ from database.database import (
     CloseConnection,
     CloseSession,
     GetDatabaseTables,
-    meta
+    MakeMigration
 )
 
  
@@ -62,8 +62,8 @@ def setupServerRoutes(app:FastAPI):
         return(user)
 
 def createServer():
+    config = Config()
     app = FastAPI()
     setupServerRoutes(app)
-    engine = create_engine(f"mysql+mysqlconnector://root:asdasd@127.0.0.1:3306/book_db")
-    meta.create_all(engine)
+    MakeMigration(config.DbConfig)
     return app

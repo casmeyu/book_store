@@ -58,3 +58,9 @@ def GetDatabaseTables(openSession:Session):
     except Exception as ex:
         print("[Database] (GetDatabaseTables) - An error occurred while getting all the database table names", ex)
         return None
+
+def MakeMigration(config:DbConfig):
+    print("Making migration")
+    connection_string = f"mysql+mysqlconnector://{config.usr}:{config.pwd}@{config.host}:{config.port}/{config.name}"
+    engine = create_engine(connection_string)
+    meta.create_all(engine)
