@@ -1,7 +1,6 @@
 import os
 from fastapi import FastAPI
 from sqlalchemy import select, insert, create_engine
-from sqlalchemy.orm import joinedload
 from config.config import Config
 from models.product_model import Product
 from schema.product_schema import Product_pydantic
@@ -9,7 +8,6 @@ from models.user_model import User, user_role
 from schema.user_schema import User_pydantic
 from models.user_model import Rol
 from schema.rol_schema import Rol_pydantic
-from passlib.context import CryptContext
 import datetime
 from database.database import (
     OpenSession,
@@ -19,7 +17,7 @@ from database.database import (
     Hasher
 )
 
- 
+
 def setupServerRoutes(app:FastAPI):
     @app.get("/")
     async def root():
@@ -41,13 +39,12 @@ def setupServerRoutes(app:FastAPI):
         return(result)
     
     @app.get("/products/{product_id}", response_model=Product_pydantic)
-    async def get_product_by_id(prod : Product_pydantic):
+    async def get_product_by_id():
         config = Config()
         session = OpenSession(config.DbConfig)
-        product_by_id = Product(prod.name, prod.price)
+        product_by_id = session
         session.get
 
-        
     @app.post("/products", response_model=Product_pydantic)
     async def create_product(prod : Product_pydantic):
         #Create a new product and save it in the database
@@ -64,13 +61,10 @@ def setupServerRoutes(app:FastAPI):
         #Create a new user and save it in the database
         config = Config()
         session = OpenSession(config.DbConfig)
-        new_user = User(user.username, user.password, user.created_at, user.is_active)
-        #password hash
-        hash_password = Hasher.get_hash_password(new_user.password)
-        new_user.password = hash_password
-        #created_at
-        new_user.created_at = datetime.datetime.now()
+        hash_password = Hasher.get_hash_password(user.password)
+        new_user = User(user.username, hash_password, datetime.datetime.now(), user.is_active)
         dbRoles = session.query(Rol.id).filter(Rol.id.in_(user.roles)).all()
+        #ver documentacion pydantic response model error
         if len(dbRoles) != len(user.roles):
             print("ERROR FATAL LOS ROLES ESTAN MAL")
             return "error with roles"
