@@ -1,4 +1,3 @@
-import os
 from fastapi import FastAPI
 from sqlalchemy import select, insert, create_engine
 from config.config import Config
@@ -15,8 +14,8 @@ from database.database import (
     OpenSession,
     CloseSession,
     GetDatabaseTables,
-    meta,
-    Hasher
+    Hasher,
+    MakeMigration
 )
 
 
@@ -109,8 +108,8 @@ def setupServerRoutes(app:FastAPI):
         return(book)
 
 def createServer():
+    config = Config()
     app = FastAPI()
     setupServerRoutes(app)
-    engine = create_engine(f"mysql+mysqlconnector://root:asdasd@127.0.0.1:3306/book_db")
-    meta.create_all(engine)
+    MakeMigration(config.DbConfig)
     return app
