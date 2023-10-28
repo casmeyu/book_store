@@ -8,4 +8,11 @@ class User_pydantic(BaseModel):
     username : str
     password : str
     is_active : bool
-    
+
+class NewUser(BaseModel):
+    username : str
+    password : str
+
+class PublicUserInfo(BaseModel):
+    username : str
+    is_active : bool

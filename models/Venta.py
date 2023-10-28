@@ -37,7 +37,7 @@ class Venta(Base):
             # Chequear product en base de datos con suficiente cantidad
             # Calcular precio total prod.price * item.quantity
             # Guardar relacion venta producto con cantidad y precio final NO GUARDAR EN BASE DE DATOS
-            finalPrice += (item.product.price * item.quantity)
+            finalPrice += (item.price * item.quantity)
         print(f'Created Venta\nuser {self.user_id} - {self.date}\n{self.products}')
 
     def __repr__(self):

@@ -1,13 +1,13 @@
 import os
 from fastapi import FastAPI
-from sqlalchemy import select, insert, create_engine
+from sqlalchemy import select, insert, create_engine, exists
 from config.config import Config
 from models.product_model import Product
 from schema.product_schema import Product_pydantic
 from models.user_model import User
 from models.Venta import Venta
 from schema.venta_schema import NewVentaSchema
-from schema.user_schema import User_pydantic
+from schema.user_schema import User_pydantic, NewUser, PublicUserInfo
 from database.database import (
     OpenConnection,
     OpenSession,
@@ -49,18 +49,20 @@ def setupServerRoutes(app:FastAPI):
         CloseSession(session)
         return (prod)
 
-    @app.post("/users", response_model=User_pydantic)
-    async def create_user(user : User_pydantic):
+    @app.post("/users", response_model=PublicUserInfo)
+    async def create_user(user : NewUser):
         #Create a new user and save it in the database
         config = Config()
         session = OpenSession(config.DbConfig)
-        newuser = User(user.username, user.password, user.is_active,)
+        newuser = User(user.username, user.password, True)
         result = session.add(newuser)
-        print (result)
+        print ("RESULT", result)
         session.commit()
-        print (result)
+        userInfo = {
+            username: user.username
+        }
         CloseSession(session)
-        return(user)
+        return(userInfo)
 
 
     # Ventas
@@ -76,15 +78,29 @@ def setupServerRoutes(app:FastAPI):
     @app.post("/ventas", response_model=NewVentaSchema)
     async def createVenta(ventaInfo: NewVentaSchema):
         config = Config()
-        print("Create venta with info:")
+        products = []
+
         session = OpenSession(config.DbConfig)
-        newVenta = Venta(ventaInfo.user_id, ventaInfo.products)
-        print(newVenta)
-        session.add(newVenta)
+        
+        # Check product existance in DB
+        product_ids = [p.id for p in ventaInfo.products]
+        print("Product ids", product_ids)
+        db_products = session.query(Product).filter(Product.id.in_(product_ids)).all()
+        if (len(product_ids) != len(db_products)):
+            print("ERROR no estan los products")
+        
+        # Check user in the DB
+        if (not session.query(exists().where(User.id == ventaInfo.user_id))):
+            print("User does not exist")
+        # Products are in DB
+        new_venta = Venta()
+        return (ventaInfo)
+
+        # session.add(newVenta)
         # Anadir relaciones con productos
-        session.commit()
-        CloseSession(session)
-        return(newVenta)
+        # session.commit()
+        # CloseSession(session)
+        # return(newVenta)
 
 def createServer():
     app = FastAPI()

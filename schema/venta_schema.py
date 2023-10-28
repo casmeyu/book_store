@@ -18,6 +18,8 @@ class NewVentaSchema(BaseModel):
     user_id : int
     products : list[ProductInVenta]
 
+    
+
     # id:int = Column(Integer, Sequence("venta_id_seq"), primary_key=True, nullable=False)
     # user_id:int = ForeignKey(("products.id"))
     # date:datetime = Column("date", DateTime),
