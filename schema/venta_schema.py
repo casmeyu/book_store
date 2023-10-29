@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from schema.product_schema import ProductSchema
 import datetime
 
 class VentaSchema(BaseModel):
@@ -7,21 +8,21 @@ class VentaSchema(BaseModel):
     user_id : int
     # date : datetime = None
     price : float
-    products : list[int]
+    products : list[ProductSchema]
+    class Config:
+        from_attributes = True
 
-class ProductInVenta(BaseModel):
+
+
+class FinalProductOrder(BaseModel): 
+    product: ProductSchema
+    quantity: int
+
+
+class ProductOrder(BaseModel): # USER REQUEST
     id : int
-    price : float
     quantity : int
 
-class NewVentaSchema(BaseModel):
+class NewVentaRequest(BaseModel):
     user_id : int
-    products : list[ProductInVenta]
-
-    
-
-    # id:int = Column(Integer, Sequence("venta_id_seq"), primary_key=True, nullable=False)
-    # user_id:int = ForeignKey(("products.id"))
-    # date:datetime = Column("date", DateTime),
-    # price:float = Column(Integer, nullable=False)
-    # products:Mapped[list[Product]] = relationship(secondary="venta_product")
+    products : list[ProductOrder]
