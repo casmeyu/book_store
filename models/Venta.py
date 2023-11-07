@@ -5,6 +5,7 @@ from schema.venta_schema import FinalProductOrder
 from models.product_model import Product
 from database.database import meta
 from datetime import datetime
+from typing import List
 
 
 Base = declarative_base(metadata=meta) # Use a single BASE instead of importing meta
@@ -22,31 +23,16 @@ class Venta(Base):
     __tablename__ = "ventas"
 
     id:int = Column(Integer, autoincrement=True, primary_key=True, nullable=False)
-    user_id:int = ForeignKey(("users.id"))
+    user_id:int = Column(Integer, ForeignKey(("users.id")))
     date:datetime = Column("date", DateTime),
-    price:float = Column(Integer, nullable=False)
-    products:Mapped[list[Product]] = relationship(secondary="venta_product")
+    price:float = Column(Float, nullable=False)
+    products:Mapped[List[Product]] = relationship(secondary="venta_product")
 
-    # product_quantity = association_proxy("venta_product", "quantity") # Adding proxy to access `quantity` in many2many relation table
-    # product_price = association_proxy("venta_product", "price") # Adding proxy to access `price` in many2many relation table
-
-    def __init__(self, user_id:int, finalOrder:list[FinalProductOrder]):
-        self.price:float = 0.0
+    def __init__(self, user_id:int, price:float):
         self.user_id = user_id
         self.date = datetime.now()
-        print("FINA ORDER?")
-        print(finalOrder)
-        for item in finalOrder:
-            self.products.append(item["product"])
-            # self.product_quantity[item["product"]] = item["quantity"]
-            # self.product_price[item["product"]] = item["product"].price
-            # association_info = self.products.association_proxy(item["product"], 'quantity')
-            # association_info = (item["product"].price * item["quantity"])
-            print("INSERTING RELATIONSHIP?")
-
-            self.price += (item["product"].price * item["quantity"])
-
-        print(f'Created Venta\nuser {self.user_id} - {self.date}\n{self.products}')
+        self.price = price
+        print(f'Created Venta\nuser {self.user_id} - {self.date}\n{self.price}')
 
     def __repr__(self):
             return f"<Venta(id={self.id}, user_id='{self.user_id}', date={self.date}, price='{self.price}, products={[prod for prod in self.products]}')>"

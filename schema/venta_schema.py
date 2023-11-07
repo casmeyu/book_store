@@ -1,6 +1,7 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from schema.product_schema import ProductSchema
+from models.product_model import Product
 import datetime
 
 class VentaSchema(BaseModel):
@@ -8,7 +9,7 @@ class VentaSchema(BaseModel):
     user_id : int
     # date : datetime = None
     price : float
-    products : list[ProductSchema]
+    products : List[ProductSchema]
     class Config:
         from_attributes = True
 

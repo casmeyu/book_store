@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from sqlalchemy import select, insert, create_engine, exists
+from sqlalchemy.orm import joinedload
 from config.config import Config
-from models.Venta import Venta, Product
+from models.Venta import Venta, Product, venta_product
 from schema.product_schema import ProductSchema
 from models.user_model import User, user_role
 from schema.user_schema import User_pydantic, NewUser, PublicUserInfo
@@ -81,6 +82,7 @@ def setupServerRoutes(app:FastAPI):
         if len(db_roles) != len(user.roles):
             print("ERROR FATAL LOS ROLES ESTAN MAL")
             return PublicUserInfo(username="No hay roles mi amigo", is_active=False)
+            #HANDLE ERRORS HANDLE ERRORS
         
         new_user.roles = db_roles
 
@@ -101,57 +103,67 @@ def setupServerRoutes(app:FastAPI):
     async def getAllVentas():
         config = Config()
         session = OpenSession(config.DbConfig)
-        ventas = session.query(Venta).all()
-        ventas = [VentaSchema.from_orm(v) for v in ventas]
+        ventas = session.query(Venta).options(joinedload(Venta.products)).all()
         CloseSession(session)
         return ventas
 
     @app.post("/ventas", response_model=NewVentaRequest)
     async def createVenta(ventaInfo: NewVentaRequest):
         config = Config()
-        products = []
-
         session = OpenSession(config.DbConfig)
         
         # Check product existance in DB
         product_ids = [p.id for p in ventaInfo.products]
-        print("Product ids", product_ids)
         db_products = session.query(Product).filter(Product.id.in_(product_ids)).all()
         if (len(product_ids) != len(db_products)):
             print("ERROR no estan los products")
-        # Products are in DB
+            # HANDLE ERRORS HANDLE ERRORS
+        
         # Check user in the DB
         if (not session.query(exists().where(User.id == ventaInfo.user_id))):
             print("User does not exist")
+            # HANDLE ERRORS HANDLE ERRORS
         
+        # Calculating final price and getting the products into product_list
         product_list = []
+        venta_price = 0.0
 
+        # THIS SHOULD BE CHANGED TO A HASH TABLE INSTEAD OF NESTED FOR LOOPS
+        # ALSO THERE IS POSIBBLE ERROR IF I SEND THE SAME ITEM TWICE IN THE VENTA REQUEST
+        # This error will be fixed with the hash table but it is a minor thing as of now
         for p in ventaInfo.products:
             item = {
                 "quantity": p.quantity
             }
             for db_p in db_products:
                 if (p.id == db_p.id):
-                    print("Encontre el producto")
                     item["product"] = db_p
                     product_list.append(item)
+                    venta_price += p.quantity * db_p.price
 
-        print("LISTA FINAL DE PRODUCTOS COMBINADA")
-        print(product_list)
-
-        new_venta = Venta(ventaInfo.user_id, product_list)
-        print("NEW VENTA IS")
-        print(new_venta)
-        
-
+        new_venta = Venta(ventaInfo.user_id, venta_price)
         session.add(new_venta)
+        session.flush()
+        session.refresh(new_venta)
+        
+        # Add the venta_product relationshinp
+        #Here we have another loop
+        for item in product_list:
+            print("Adding ", item["product"].name)
+            session.execute(venta_product.insert().values(
+                venta_id=new_venta.id,
+                product_id=item["product"].id,
+                quantity=item["quantity"],
+                price=item["product"].price
+                )
+            )
         session.commit()
         CloseSession(session)
         return(ventaInfo)
         
     
     @app.post("/roles", response_model=Rol_pydantic)
-    async def create_rol(rol : Rol_pydantic):
+    async def create_rol(rol: Rol_pydantic):
         #Create a new rol and save it in the database
         config = Config()
         session = OpenSession(config.DbConfig)

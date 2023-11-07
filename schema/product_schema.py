@@ -1,7 +1,9 @@
 from pydantic import BaseModel
-from typing import Optional
 
 class ProductSchema(BaseModel):
-    id : Optional[int] # NO ES OPCIONAL?
+    id : int
     name : str
     price : int
+
+    class Config:
+        from_attributes=True
