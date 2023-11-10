@@ -23,14 +23,13 @@ class Venta(Base):
     __tablename__ = "ventas"
 
     id:int = Column(Integer, autoincrement=True, primary_key=True, nullable=False)
-    user_id:int = Column(Integer, ForeignKey(("users.id")))
-    date:datetime = Column("date", DateTime),
+    user_id:int = Column(Integer, ForeignKey(("users.id")), nullable=False)
+    date:datetime = Column(DateTime, default=datetime.utcnow(), nullable=False)
     price:float = Column(Float, nullable=False)
     products:Mapped[List[Product]] = relationship(secondary="venta_product")
 
     def __init__(self, user_id:int, price:float):
         self.user_id = user_id
-        self.date = datetime.now()
         self.price = price
         print(f'Created Venta\nuser {self.user_id} - {self.date}\n{self.price}')
 
