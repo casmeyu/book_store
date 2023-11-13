@@ -35,6 +35,7 @@ def setupServerRoutes(app:FastAPI):
         config = Config()
         db = DB(config.DbConfig)
         result = db.session.query(Product).all()
+        db.CloseSession()
         return(result)
     
     @app.get("/products/{product_id}", response_model=ProductSchema)
@@ -42,32 +43,34 @@ def setupServerRoutes(app:FastAPI):
         config = Config()
         db = DB(config.DbConfig)
         product = db.session.query(Product).get(product_id)
+        db.CloseSession()
         return product
 
-    # @app.get("/books")
-    # async def getAllBooks():
-    #     config = Config()
-    #     session = OpenSession(config.DbConfig)
-    #     result = session.query(Book).all()    
-    #     print(result)
-    #     return(result)
+    @app.get("/books")
+    async def getAllBooks():
+        config = Config()
+        db = DB(config.DbConfig)
+        result = db.session.query(Book).all()
+        db.CloseSession()
+        return(result)
 
-    # @app.post("/products", response_model=ProductSchema)
-    # async def create_product(prod : ProductSchema):
-    #     #Create a new product and save it in the database
-    #     config = Config()
-    #     session = OpenSession(config.DbConfig)
-    #     newproduct = Product(prod.name, prod.price)
-    #     session.add(newproduct)
-    #     session.commit()
-    #     CloseSession(session)
-    #     return (prod)
+    @app.post("/products", response_model=ProductSchema)
+    async def create_product(prod : ProductSchema):
+        #Create a new product and save it in the database
+        config = Config()
+        db = DB(config.DbConfig)
+        newproduct = Product(prod.name, prod.price)
+        db.session.add(newproduct)
+        db.session.commit()
+        db.CloseSession()
+        return (prod)
 
     @app.get("/users/{user_id}", response_model=PublicUserInfo)
-    async def get_user_by_id():
+    async def get_user_by_id(user_id):
         config = Config()
         db = DB(config.DbConfig)
         user = db.session.query(User).get(user_id)
+        db.CloseSession()
         public_user = PublicUserInfo.from_orm(user)
         return public_user
 
@@ -76,7 +79,6 @@ def setupServerRoutes(app:FastAPI):
         config = Config()
         db = DB(config.DbConfig)
         allUsers = db.session.query(User).all()
-        # Convert all users to PublicUserInfo (pydantic)
         publicUsers = [PublicUserInfo.from_orm(u) for u in allUsers]
         return(publicUsers)
 
@@ -107,67 +109,67 @@ def setupServerRoutes(app:FastAPI):
         return(publicUser)
 
     # # Ventas
-    # @app.get("/ventas")
-    # async def getAllVentas():
-    #     config = Config()
-    #     session = OpenSession(config.DbConfig)
-    #     ventas = session.query(Venta).options(joinedload(Venta.products)).all()
-    #     CloseSession(session)
-    #     return ventas
+    @app.get("/ventas")
+    async def getAllVentas():
+        config = Config()
+        db = DB(config.DbConfig)
+        ventas = db.session.query(Venta).options(joinedload(Venta.products)).all()
+        db.CloseSession()
+        return ventas
 
-    # @app.post("/ventas", response_model=NewVentaRequest)
-    # async def createVenta(ventaInfo: NewVentaRequest):
-    #     config = Config()
-    #     session = OpenSession(config.DbConfig)
+    @app.post("/ventas", response_model=NewVentaRequest)
+    async def createVenta(ventaInfo: NewVentaRequest):
+        config = Config()
+        db = DB(config.DbConfig)
         
-    #     # Check product existance in DB
-    #     product_ids = [p.id for p in ventaInfo.products]
-    #     db_products = session.query(Product).filter(Product.id.in_(product_ids)).all()
-    #     if (len(product_ids) != len(db_products)):
-    #         print("ERROR no estan los products")
-    #         # HANDLE ERRORS HANDLE ERRORS
+        # Check product existance in DB
+        product_ids = [p.id for p in ventaInfo.products]
+        db_products = db.session.query(Product).filter(Product.id.in_(product_ids)).all()
+        if (len(product_ids) != len(db_products)):
+            print("ERROR no estan los products")
+            # HANDLE ERRORS HANDLE ERRORS
         
-    #     # Check user in the DB
-    #     if (not session.query(exists().where(User.id == ventaInfo.user_id))):
-    #         print("User does not exist")
-    #         # HANDLE ERRORS HANDLE ERRORS
+        # Check user in the DB
+        if (not db.session.query(exists().where(User.id == ventaInfo.user_id))):
+            print("User does not exist")
+            # HANDLE ERRORS HANDLE ERRORS
         
-    #     # Calculating final price and getting the products into product_list
-    #     product_list = []
-    #     venta_price = 0.0
+        # Calculating final price and getting the products into product_list
+        product_list = []
+        venta_price = 0.0
 
-    #     # THIS SHOULD BE CHANGED TO A HASH TABLE INSTEAD OF NESTED FOR LOOPS
-    #     # ALSO THERE IS POSIBBLE ERROR IF I SEND THE SAME ITEM TWICE IN THE VENTA REQUEST
-    #     # This error will be fixed with the hash table but it is a minor thing as of now
-    #     for p in ventaInfo.products:
-    #         item = {
-    #             "quantity": p.quantity
-    #         }
-    #         for db_p in db_products:
-    #             if (p.id == db_p.id):
-    #                 item["product"] = db_p
-    #                 product_list.append(item)
-    #                 venta_price += p.quantity * db_p.price
+        # THIS SHOULD BE CHANGED TO A HASH TABLE INSTEAD OF NESTED FOR LOOPS
+        # ALSO THERE IS POSIBBLE ERROR IF I SEND THE SAME ITEM TWICE IN THE VENTA REQUEST
+        # This error will be fixed with the hash table but it is a minor thing as of now
+        for p in ventaInfo.products:
+            item = {
+                "quantity": p.quantity
+            }
+            for db_p in db_products:
+                if (p.id == db_p.id):
+                    item["product"] = db_p
+                    product_list.append(item)
+                    venta_price += p.quantity * db_p.price
 
-    #     new_venta = Venta(ventaInfo.user_id, venta_price)
-    #     session.add(new_venta)
-    #     session.flush()
-    #     session.refresh(new_venta)
+        new_venta = Venta(ventaInfo.user_id, venta_price)
+        db.session.add(new_venta)
+        db.session.flush()
+        db.session.refresh(new_venta)
         
-    #     # Add the venta_product relationshinp
-    #     #Here we have another loop
-    #     for item in product_list:
-    #         print("Adding ", item["product"].name)
-    #         session.execute(venta_product.insert().values(
-    #             venta_id=new_venta.id,
-    #             product_id=item["product"].id,
-    #             quantity=item["quantity"],
-    #             price=item["product"].price
-    #             )
-    #         )
-    #     session.commit()
-    #     CloseSession(session)
-    #     return(ventaInfo)
+        # Add the venta_product relationshinp
+        #Here we have another loop
+        for item in product_list:
+            print("Adding ", item["product"].name)
+            db.session.execute(venta_product.insert().values(
+                venta_id=new_venta.id,
+                product_id=item["product"].id,
+                quantity=item["quantity"],
+                price=item["product"].price
+                )
+            )
+        db.session.commit()
+        db.CloseSession()
+        return(ventaInfo)
         
     
     @app.post("/roles", response_model=Rol_pydantic)
@@ -181,23 +183,16 @@ def setupServerRoutes(app:FastAPI):
         db.CloseSession()
         return(rol)
     
-    # @app.post("/books", response_model=Book_pydantic)
-    # async def create_book(book : Book_pydantic):
-    #     #Create a new book and save it in the database
-    #     config = Config()
-    #     session = OpenSession(config.DbConfig)
-    #     newbook = Book(book.isbn, book.title, book.author, book.publisher, book.price)
-    #     session.add(newbook)
-    #     session.commit()
-    #     CloseSession(session)
-    #     return(book)
-
-    @app.get("/open")
-    async def open():
+    @app.post("/books", response_model=Book_pydantic)
+    async def create_book(book : Book_pydantic):
+        #Create a new book and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        res = db.GetDatabaseTables()
-        print(res)
+        newbook = Book(book.isbn, book.title, book.author, book.publisher, book.price)
+        db.session.add(newbook)
+        db.session.commit()
+        db.CloseSession()
+        return(book)
 
 def createServer():
     config = Config()
