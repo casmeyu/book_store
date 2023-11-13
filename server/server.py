@@ -1,11 +1,11 @@
-from fastapi import FastAPI
-from sqlalchemy import select, insert, create_engine, exists
+from fastapi import FastAPI, HTTPException, status
+from sqlalchemy import select, insert, exists
 from sqlalchemy.orm import joinedload
 from config.config import Config
 from models.Venta import Venta, Product, venta_product
 from schema.product_schema import ProductSchema
-from models.user_model import User, user_role
-from schema.user_schema import User_pydantic, NewUser, PublicUserInfo
+from models.user_model import User
+from schema.user_schema import NewUser, PublicUserInfo
 from models.user_model import Rol
 from schema.rol_schema import Rol_pydantic
 
@@ -80,20 +80,13 @@ def setupServerRoutes(app:FastAPI):
         #ver documentacion pydantic response model error
         #Check roles existance
         if len(db_roles) != len(user.roles):
-            print("ERROR FATAL LOS ROLES ESTAN MAL")
-            return PublicUserInfo(username="No hay roles mi amigo", is_active=False)
             #HANDLE ERRORS HANDLE ERRORS
-        
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Roles problem")
         new_user.roles = db_roles
-
         session.add(new_user)
         db_user:User = session.query(User).where(User.username == user.username).first() # Grab user from db
-        # for r in user.roles:
-        #     session.execute(user_role.insert().values(user_id=db_user.id, role_id=r))
         session.commit()
-
         publicUser = PublicUserInfo.from_orm(db_user)
-        
         CloseSession(session)
         return(publicUser)
 
