@@ -1,9 +1,26 @@
 ###
 # This Module has the responsability to Open and Close connections to the database
 ###
-from sqlalchemy import create_engine, Connection, text, Engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, Connection, text, Engine, MetaData
+from sqlalchemy.orm import sessionmaker, declarative_base
 from config.config import DbConfig
+from passlib.context import CryptContext
+
+
+meta = MetaData()
+Base = declarative_base(metadata=meta)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+#Hash function
+class Hasher:
+
+    @staticmethod
+    def get_hash_password(plain_password):
+        return pwd_context.hash(plain_password)
+    
+    @staticmethod
+    def verify_password(plain_password, hash_password):
+        return pwd_context.verify(plain_password, hash_password)
 
 class DB():    
     def __init__(self, config:DbConfig):
@@ -70,3 +87,7 @@ class DB():
         except Exception as ex:
             print("[Database] (GetDatabaseTables) - An error occurred while getting all the database table names", ex)
             return None
+
+    def MakeMigration(self):
+        print("Making migration")
+        meta.create_all(self.__engine)
