@@ -14,4 +14,4 @@ class Product(Base):
         self.price = price
 
     def __repr__(self):
-        return f"<Product(id={self.id}, name='{self.name}', price='{self.price}')>"
+        return f"<Product(id={self.id}, name='{self.name}', price={self.price})>"
