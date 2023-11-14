@@ -1,10 +1,11 @@
 from fastapi import FastAPI
-from server.server import Server
 from config.config import Config
+from server.server import Server
 
 def setupServerRoutes(server:Server, config:Config):
+    print("setupServerRoutes for", server, config)
     app = server.app
-    
+    print("APP ROUTES:", app.routes)
     @app.get("/")
     async def root():
         return {"message": "Book store home page"}
@@ -33,4 +34,4 @@ def setupServerRoutes(server:Server, config:Config):
         print(newproduct)
         conn.execute(insert(Product).values(name = name, price = price))
         conn.commit()
-        CloseConnection(conn)
+        CloseConnection(conn)  
