@@ -8,10 +8,8 @@ load_dotenv()
 
 def main():
     config = Config()
-
     server = Server(config)
     setupServerRoutes(server, config)
-    print("Routes after server", server.app.routes)
     uvicorn.run(server.app, host=config.AppConfig.host, port=config.AppConfig.port)
 
 if __name__ == "__main__":
