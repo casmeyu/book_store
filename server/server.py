@@ -128,6 +128,8 @@ def setupServerRoutes(app:FastAPI):
     async def createVenta(ventaInfo: NewVentaRequest):
         config = Config()
         db = DB(config.DbConfig)
+        print ("this is the db")
+        print (db)
         
         # Check product existance in DB
         product_ids = [p.id for p in ventaInfo.products]
@@ -160,6 +162,7 @@ def setupServerRoutes(app:FastAPI):
 
         new_venta = Venta(ventaInfo.user_id, venta_price)
         db.session.add(new_venta)
+        print ("after add")
         db.session.flush()
         db.session.refresh(new_venta)
         print("New venta first refresh", new_venta)
@@ -174,12 +177,10 @@ def setupServerRoutes(app:FastAPI):
                 price=item["product"].price
                 )
             )
-        db.session.commit()
-        print("Before refresh", new_venta)        
-        db.session.refresh(new_venta)
-        print("After refresh", new_venta)
+        db.session.commit()      
+        new_venta = db.session.query(Venta).options(joinedload(Venta.products)).where(Venta.id == new_venta.id)
         db.CloseSession()
-        
+        print("\n\n\n", new_venta)
         # TRANSFORM VENTA TO PYDANTIC SCHEMA!!!
         return(ventaInfo)
         
