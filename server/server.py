@@ -77,11 +77,16 @@ def setupServerRoutes(app:FastAPI):
         hash_password = Hasher.get_hash_password(user.password)
         new_user = User(user.username, hash_password, str(datetime.now()), True)
         db_roles = session.query(Rol).filter(Rol.id.in_(user.roles)).all()
-        #ver documentacion pydantic response model error
-        #Check roles existance
+        print (db_roles)
         if len(db_roles) != len(user.roles):
             #HANDLE ERRORS HANDLE ERRORS
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Roles problem")
+        db_name = session.query(User).filter_by(username = user.username)
+        print (db_name)
+        #if db_name:
+         #   raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="username already exists on database")
+        #ver documentacion pydantic response model error
+        #Check roles existance
         new_user.roles = db_roles
         session.add(new_user)
         db_user:User = session.query(User).where(User.username == user.username).first() # Grab user from db
