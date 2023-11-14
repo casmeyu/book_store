@@ -1,6 +1,9 @@
 from fastapi import FastAPI
+from database.database import DB
+############3
 from sqlalchemy import select, insert, create_engine, exists
 from sqlalchemy.orm import joinedload
+##########3333
 from config.config import Config
 from models.Venta import Venta, Product, venta_product
 from schema.product_schema import ProductSchema
@@ -20,107 +23,114 @@ def setupServerRoutes(app:FastAPI):
     async def root():
         return {"message": "Book store home page!"}
 
-    @app.get("/api/db/tables")
-    async def getDbTables():
-        config = Config()
-        session = OpenSession(config.DbConfig)
-        db_tables = GetDatabaseTables(session)
-        return db_tables
+    # @app.get("/api/db/tables")
+    # async def getDbTables():
+    #     config = Config()
+    #     session = OpenSession(config.DbConfig)
+    #     db_tables = GetDatabaseTables(session)
+    #     return db_tables
         
     @app.get("/products")
     async def getAllProducts():
         config = Config()
-        session = OpenSession(config.DbConfig)
-        result = session.query(Product).all()    
-        print(result)
+        db = DB(config.DbConfig)
+        result = db.session.query(Product).all()
+        db.CloseSession()
         return(result)
     
     @app.get("/products/{product_id}", response_model=ProductSchema)
     async def get_product_by_id():
         config = Config()
-        session = OpenSession(config.DbConfig)
-        product_by_id = session
-        session.get
+        db = DB(config.DbConfig)
+        product = db.session.query(Product).get(product_id)
+        db.CloseSession()
+        return product
 
     @app.get("/books")
     async def getAllBooks():
         config = Config()
-        session = OpenSession(config.DbConfig)
-        result = session.query(Book).all()    
-        print(result)
+        db = DB(config.DbConfig)
+        result = db.session.query(Book).all()
+        db.CloseSession()
         return(result)
 
     @app.post("/products", response_model=ProductSchema)
     async def create_product(prod : ProductSchema):
         #Create a new product and save it in the database
         config = Config()
-        session = OpenSession(config.DbConfig)
+        db = DB(config.DbConfig)
         newproduct = Product(prod.name, prod.price)
-        session.add(newproduct)
-        session.commit()
-        CloseSession(session)
+        db.session.add(newproduct)
+        db.session.commit()
+        db.CloseSession()
         return (prod)
+
+    @app.get("/users/{user_id}", response_model=PublicUserInfo)
+    async def get_user_by_id(user_id):
+        config = Config()
+        db = DB(config.DbConfig)
+        user = db.session.query(User).get(user_id)
+        db.CloseSession()
+        public_user = PublicUserInfo.from_orm(user)
+        return public_user
 
     @app.get("/users", response_model=list[PublicUserInfo])
     async def get_all_users():
         config = Config()
-        session = OpenSession(config.DbConfig)
-        allUsers = session.query(User).all()
-        # Convert all users to PublicUserInfo (pydantic)
+        db = DB(config.DbConfig)
+        allUsers = db.session.query(User).all()
         publicUsers = [PublicUserInfo.from_orm(u) for u in allUsers]
         return(publicUsers)
 
     @app.post("/users", response_model=PublicUserInfo)
     async def create_user(user : NewUser):
         config = Config()
-        session = OpenSession(config.DbConfig)
+        db = DB(config.DbConfig)
+
         hash_password = Hasher.get_hash_password(user.password)
         new_user = User(user.username, hash_password, str(datetime.now()), True)
-        db_roles = session.query(Rol).filter(Rol.id.in_(user.roles)).all()
+        db_roles = db.session.query(Rol).filter(Rol.id.in_(user.roles)).all()
         #ver documentacion pydantic response model error
-        #Check roles existance
+        #Check roles existance only by length comparation
         if len(db_roles) != len(user.roles):
-            print("ERROR FATAL LOS ROLES ESTAN MAL")
-            return PublicUserInfo(username="No hay roles mi amigo", is_active=False)
             #HANDLE ERRORS HANDLE ERRORS
-        
+            print("ERROR FATAL FALTAN O SOBRAN ROLES")
+            return PublicUserInfo(username="ALGO MAL CON LOS ROLES AMIGO", is_active=False)
+            
         new_user.roles = db_roles
 
-        session.add(new_user)
-        db_user:User = session.query(User).where(User.username == user.username).first() # Grab user from db
-        # for r in user.roles:
-        #     session.execute(user_role.insert().values(user_id=db_user.id, role_id=r))
-        session.commit()
+        db.session.add(new_user)
+        db.session.flush()
+        db.session.refresh(new_user)
+        db.session.commit()
+        db.CloseSession()
 
-        publicUser = PublicUserInfo.from_orm(db_user)
-        
-        CloseSession(session)
+        publicUser = PublicUserInfo.from_orm(new_user)
         return(publicUser)
 
-
-    # Ventas
+    # # Ventas
     @app.get("/ventas")
     async def getAllVentas():
         config = Config()
-        session = OpenSession(config.DbConfig)
-        ventas = session.query(Venta).options(joinedload(Venta.products)).all()
-        CloseSession(session)
+        db = DB(config.DbConfig)
+        ventas = db.session.query(Venta).options(joinedload(Venta.products)).all()
+        db.CloseSession()
         return ventas
 
     @app.post("/ventas", response_model=NewVentaRequest)
     async def createVenta(ventaInfo: NewVentaRequest):
         config = Config()
-        session = OpenSession(config.DbConfig)
+        db = DB(config.DbConfig)
         
         # Check product existance in DB
         product_ids = [p.id for p in ventaInfo.products]
-        db_products = session.query(Product).filter(Product.id.in_(product_ids)).all()
+        db_products = db.session.query(Product).filter(Product.id.in_(product_ids)).all()
         if (len(product_ids) != len(db_products)):
             print("ERROR no estan los products")
             # HANDLE ERRORS HANDLE ERRORS
         
         # Check user in the DB
-        if (not session.query(exists().where(User.id == ventaInfo.user_id))):
+        if (not db.session.query(exists().where(User.id == ventaInfo.user_id))):
             print("User does not exist")
             # HANDLE ERRORS HANDLE ERRORS
         
@@ -142,23 +152,23 @@ def setupServerRoutes(app:FastAPI):
                     venta_price += p.quantity * db_p.price
 
         new_venta = Venta(ventaInfo.user_id, venta_price)
-        session.add(new_venta)
-        session.flush()
-        session.refresh(new_venta)
+        db.session.add(new_venta)
+        db.session.flush()
+        db.session.refresh(new_venta)
         
         # Add the venta_product relationshinp
         #Here we have another loop
         for item in product_list:
             print("Adding ", item["product"].name)
-            session.execute(venta_product.insert().values(
+            db.session.execute(venta_product.insert().values(
                 venta_id=new_venta.id,
                 product_id=item["product"].id,
                 quantity=item["quantity"],
                 price=item["product"].price
                 )
             )
-        session.commit()
-        CloseSession(session)
+        db.session.commit()
+        db.CloseSession()
         return(ventaInfo)
         
     
@@ -166,28 +176,29 @@ def setupServerRoutes(app:FastAPI):
     async def create_rol(rol: Rol_pydantic):
         #Create a new rol and save it in the database
         config = Config()
-        session = OpenSession(config.DbConfig)
+        db = DB(config.DbConfig)
         newrol = Rol(rol.name)
-        session.add(newrol)
-        session.commit()
-        CloseSession(session)
+        db.session.add(newrol)
+        db.session.commit()
+        db.CloseSession()
         return(rol)
     
     @app.post("/books", response_model=Book_pydantic)
     async def create_book(book : Book_pydantic):
         #Create a new book and save it in the database
         config = Config()
-        session = OpenSession(config.DbConfig)
+        db = DB(config.DbConfig)
         newbook = Book(book.isbn, book.title, book.author, book.publisher, book.price)
-        session.add(newbook)
-        session.commit()
-        CloseSession(session)
+        db.session.add(newbook)
+        db.session.commit()
+        db.CloseSession()
         return(book)
 
 def createServer():
     config = Config()
     app = FastAPI()
     setupServerRoutes(app)
-    MakeMigration(config.DbConfig)
+    db = DB(config.DbConfig)
+    db.MakeMigration()
     return app
 
