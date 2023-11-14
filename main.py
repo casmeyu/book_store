@@ -1,13 +1,13 @@
 import uvicorn
 from dotenv import load_dotenv
 from config.config import Config
-from server.server import createServer
+from server.server import Server
 
 load_dotenv()
 
 def main():
     config = Config()
-    server = createServer()
+    server = Server(config)
     uvicorn.run(server, host=config.AppConfig.host, port=config.AppConfig.port)
 
 if __name__ == "__main__":
