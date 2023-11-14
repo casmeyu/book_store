@@ -56,6 +56,9 @@ def setupServerRoutes(app:FastAPI):
         config = Config()
         session = OpenSession(config.DbConfig)
         newproduct = Product(prod.name, prod.price)
+        db_productname = session.query(Product).filter_by(name = prod.name).first()
+        if db_productname:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="product already exists on db")
         session.add(newproduct)
         session.commit()
         CloseSession(session)
@@ -81,10 +84,10 @@ def setupServerRoutes(app:FastAPI):
         if len(db_roles) != len(user.roles):
             #HANDLE ERRORS HANDLE ERRORS
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Roles problem")
-        db_name = session.query(User).filter_by(username = user.username)
+        db_name = session.query(User).filter_by(username = user.username).first()
         print (db_name)
-        #if db_name:
-         #   raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="username already exists on database")
+        if db_name:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="username already exists on database")
         #ver documentacion pydantic response model error
         #Check roles existance
         new_user.roles = db_roles
