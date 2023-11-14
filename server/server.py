@@ -57,7 +57,6 @@ def setupServerRoutes(app:FastAPI):
         config = Config()
         db = DB(config.DbConfig)
         newproduct = Product(prod.name, prod.price)
-        print("What is the product?", newproduct)
         #define identifier to avoid duplicated entries
         #db_productname = db.session.query(Product).filter_by(name = prod.name).first()
         #if db_productname:
@@ -128,20 +127,17 @@ def setupServerRoutes(app:FastAPI):
     async def createVenta(ventaInfo: NewVentaRequest):
         config = Config()
         db = DB(config.DbConfig)
-        print ("this is the db")
-        print (db)
         
         # Check product existance in DB
         product_ids = [p.id for p in ventaInfo.products]
         db_products = db.session.query(Product).filter(Product.id.in_(product_ids)).all()
         if (len(product_ids) != len(db_products)):
-            print("ERROR no estan los products")
-            # HANDLE ERRORS HANDLE ERRORS
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="one or many products do not exist on database")
+            # check specific product error
         
         # Check user in the DB
         if (not db.session.query(exists().where(User.id == ventaInfo.user_id))):
-            print("User does not exist")
-            # HANDLE ERRORS HANDLE ERRORS
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user do not exist on database")
         
         # Calculating final price and getting the products into product_list
         product_list = []
@@ -162,11 +158,8 @@ def setupServerRoutes(app:FastAPI):
 
         new_venta = Venta(ventaInfo.user_id, venta_price)
         db.session.add(new_venta)
-        print ("after add")
         db.session.flush()
         db.session.refresh(new_venta)
-        print("New venta first refresh", new_venta)
-        
         # Add the venta_product relationshinp
         #Here we have another loop
         for item in product_list:
@@ -180,7 +173,6 @@ def setupServerRoutes(app:FastAPI):
         db.session.commit()      
         new_venta = db.session.query(Venta).options(joinedload(Venta.products)).where(Venta.id == new_venta.id)
         db.CloseSession()
-        print("\n\n\n", new_venta)
         # TRANSFORM VENTA TO PYDANTIC SCHEMA!!!
         return(ventaInfo)
         
@@ -195,6 +187,7 @@ def setupServerRoutes(app:FastAPI):
         db.session.commit()
         db.CloseSession()
         return(rol)
+        #add error handling
     
     @app.post("/books", response_model=Book_pydantic)
     async def create_book(book : Book_pydantic):
