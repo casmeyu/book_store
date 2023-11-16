@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Table, Integer, String, Boolean
+from sqlalchemy import Column, Table, Integer, String, Boolean, DateTime
 from database.database import Base
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 from database.database import Base
+from datetime import datetime
 
 
 user_role = Table(
@@ -18,7 +19,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     username = Column(String(200), nullable=False, unique=True)
     password = Column(String(200), nullable=False)
-    created_at = Column(String(40))
+    created_at = Column(DateTime, default=datetime.utcnow(), nullable=False)
     is_active = Column(Boolean, default=True)
     roles = relationship("Rol", secondary="user_role", back_populates="users")
     
@@ -26,7 +27,6 @@ class User(Base):
     def __init__(self, username, password, created_at, is_active):
         self.username = username
         self.password = password
-        self.created_at = created_at
         self.is_active = is_active
 
     def __repr__(self):
