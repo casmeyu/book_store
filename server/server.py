@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 from database.database import DB
 ############3
 from sqlalchemy import select, insert, create_engine, exists
@@ -52,7 +52,7 @@ def setupServerRoutes(app:FastAPI):
         result = db.GetAll(Book)
         return(result)
 
-    @app.post("/products", response_model=ProductSchema)
+    @app.post("/products", response_model=ProductSchema, status_code=status.HTTP_201_CREATED)
     async def create_product(prod : ProductSchema):
         #Create a new product and save it in the database
         config = Config()
@@ -79,7 +79,7 @@ def setupServerRoutes(app:FastAPI):
         publicUsers = [PublicUserInfo.from_orm(u) for u in users]
         return(publicUsers)
 
-    @app.post("/users", response_model=PublicUserInfo)
+    @app.post("/users", response_model=PublicUserInfo, status_code=status.HTTP_201_CREATED)
     async def create_user(user : NewUser):
         config = Config()
         db = DB(config.DbConfig)
@@ -109,7 +109,7 @@ def setupServerRoutes(app:FastAPI):
         db.CloseSession()
         return ventas
 
-    @app.post("/ventas", response_model=NewVentaRequest)
+    @app.post("/ventas", response_model=NewVentaRequest, status_code=status.HTTP_201_CREATED)
     async def createVenta(ventaInfo: NewVentaRequest):
         config = Config()
         db = DB(config.DbConfig)
@@ -161,7 +161,7 @@ def setupServerRoutes(app:FastAPI):
         return(ventaInfo)
         
     
-    @app.post("/roles", response_model=Rol_pydantic)
+    @app.post("/roles", response_model=Rol_pydantic, status_code=status.HTTP_201_CREATED)
     async def create_rol(rol: Rol_pydantic):
         #Create a new rol and save it in the database
         config = Config()
@@ -171,7 +171,7 @@ def setupServerRoutes(app:FastAPI):
         db.CloseSession()
         return(new_rol)
     
-    @app.post("/books", response_model=Book_pydantic)
+    @app.post("/books", response_model=Book_pydantic, status_code=status.HTTP_201_CREATED)
     async def create_book(book : Book_pydantic):
         #Create a new book and save it in the database
         config = Config()
