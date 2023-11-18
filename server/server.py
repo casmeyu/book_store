@@ -34,15 +34,14 @@ def setupServerRoutes(app:FastAPI):
     async def getAllProducts():
         config = Config()
         db = DB(config.DbConfig)
-        result = db.session.query(Product).all()
-        db.CloseSession()
+        result = db.GetAll(Product)
         return(result)
     
     @app.get("/products/{product_id}", response_model=ProductSchema)
-    async def get_product_by_id():
+    async def get_product_by_id(product_id:int):
         config = Config()
         db = DB(config.DbConfig)
-        product = db.session.query(Product).get(product_id)
+        product = db.GetById(Product, product_id)
         db.CloseSession()
         return product
 
@@ -50,8 +49,7 @@ def setupServerRoutes(app:FastAPI):
     async def getAllBooks():
         config = Config()
         db = DB(config.DbConfig)
-        result = db.session.query(Book).all()
-        db.CloseSession()
+        result = db.GetAll(Book)
         return(result)
 
     @app.post("/products", response_model=ProductSchema)
@@ -59,17 +57,16 @@ def setupServerRoutes(app:FastAPI):
         #Create a new product and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        newproduct = Product(prod.name, prod.price)
-        db.session.add(newproduct)
-        db.session.commit()
+        new_product = Product(prod.name, prod.price)
+        db.Insert(new_product)
         db.CloseSession()
-        return (prod)
+        return (new_product)
 
     @app.get("/users/{user_id}", response_model=PublicUserInfo)
     async def get_user_by_id(user_id):
         config = Config()
         db = DB(config.DbConfig)
-        user = db.session.query(User).get(user_id)
+        user = db.GetById(User, user_id)
         db.CloseSession()
         public_user = PublicUserInfo.from_orm(user)
         return public_user
@@ -78,8 +75,8 @@ def setupServerRoutes(app:FastAPI):
     async def get_all_users():
         config = Config()
         db = DB(config.DbConfig)
-        allUsers = db.session.query(User).all()
-        publicUsers = [PublicUserInfo.from_orm(u) for u in allUsers]
+        users = db.GetAll(User)
+        publicUsers = [PublicUserInfo.from_orm(u) for u in users]
         return(publicUsers)
 
     @app.post("/users", response_model=PublicUserInfo)
@@ -98,13 +95,8 @@ def setupServerRoutes(app:FastAPI):
             return PublicUserInfo(username="ALGO MAL CON LOS ROLES AMIGO", is_active=False)
             
         new_user.roles = db_roles
-
-        db.session.add(new_user)
-        db.session.flush()
-        db.session.refresh(new_user)
-        db.session.commit()
+        db.Insert(new_user)
         db.CloseSession()
-
         publicUser = PublicUserInfo.from_orm(new_user)
         return(publicUser)
 
@@ -113,7 +105,7 @@ def setupServerRoutes(app:FastAPI):
     async def getAllVentas():
         config = Config()
         db = DB(config.DbConfig)
-        ventas = db.session.query(Venta).options(joinedload(Venta.products)).all()
+        ventas = db.GetAll(Venta, joinedload(Venta.products))
         db.CloseSession()
         return ventas
 
@@ -152,10 +144,7 @@ def setupServerRoutes(app:FastAPI):
                     venta_price += p.quantity * db_p.price
 
         new_venta = Venta(ventaInfo.user_id, venta_price)
-        db.session.add(new_venta)
-        db.session.flush()
-        db.session.refresh(new_venta)
-        
+        db.Insert(new_venta, False)
         # Add the venta_product relationshinp
         #Here we have another loop
         for item in product_list:
@@ -177,22 +166,20 @@ def setupServerRoutes(app:FastAPI):
         #Create a new rol and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        newrol = Rol(rol.name)
-        db.session.add(newrol)
-        db.session.commit()
+        new_rol = Rol(rol.name)
+        db.Insert(new_rol)
         db.CloseSession()
-        return(rol)
+        return(new_rol)
     
     @app.post("/books", response_model=Book_pydantic)
     async def create_book(book : Book_pydantic):
         #Create a new book and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        newbook = Book(book.isbn, book.title, book.author, book.publisher, book.price)
-        db.session.add(newbook)
-        db.session.commit()
+        new_book = Book(book.isbn, book.title, book.author, book.publisher, book.price)
+        db.Insert(new_book)
         db.CloseSession()
-        return(book)
+        return(new_book)
 
 def createServer():
     config = Config()

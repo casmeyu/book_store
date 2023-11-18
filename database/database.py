@@ -91,3 +91,38 @@ class DB():
     def MakeMigration(self):
         print("Making migration")
         meta.create_all(self.__engine)
+
+    def GetAll(self, model:Base, query_options=None):
+        try:
+            print("Query all")
+            if query_options:
+                return self.session.query(model).options(query_options).all()
+            else:
+                return self.session.query(model).all()
+        except Exception as ex:
+            print("Error occurred")
+            print(ex)
+            raise ex
+
+    def GetById(self, model:Base, id:any):
+        try:
+            return self.session.query(model).get(id)
+        except Exception as ex:
+            print("Error occurred")
+            print(ex)
+            raise ex
+        
+    def Insert(self, object:Base, commit:bool=True):
+        try:
+            self.session.add(object)
+            if commit:
+                self.session.commit()
+                self.session.refresh(object)
+            else:
+                self.session.flush()
+                self.session.refresh(object)
+            return object
+        except Exception as ex:
+            print("Error occurred")
+            print(ex)
+            raise ex
