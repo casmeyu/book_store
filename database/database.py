@@ -2,7 +2,7 @@
 # This Module has the responsability to Open and Close connections to the database
 ###
 from sqlalchemy import create_engine, Connection, text, Engine, MetaData
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import Session, sessionmaker, declarative_base
 from config.config import DbConfig
 from passlib.context import CryptContext
 
@@ -59,8 +59,8 @@ class DB():
     # Opens a session to the database based on the ENV VARIABLES
     def OpenSession(self):
         try:
-            Session = sessionmaker(bind=self.__engine)
-            self.session = Session()
+            SessionClass = sessionmaker(bind=self.__engine)
+            self.session = SessionClass()
             return True
         except Exception as ex:
             print("[DATABASE] (OpenSession) - An error occurred while opening session to the database", ex)
