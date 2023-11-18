@@ -35,6 +35,7 @@ def setupServerRoutes(app:FastAPI):
         db.CloseSession()
         return(result)
     
+    # add error handling on no id on db
     @app.get("/products/{product_id}", response_model=ProductSchema)
     async def get_product_by_id(product_id):
         config = Config()
@@ -68,6 +69,7 @@ def setupServerRoutes(app:FastAPI):
         product_info = ProductSchema.model_validate(newproduct)
         return (product_info)
 
+    # add error handling on no id on db
     @app.get("/users/{user_id}", response_model=PublicUserInfo)
     async def get_user_by_id(user_id):
         config = Config()
@@ -91,12 +93,14 @@ def setupServerRoutes(app:FastAPI):
         db = DB(config.DbConfig)
 
         #Check roles existance
+        # check wath dont exists
         db_roles = db.session.query(Rol).filter(Rol.id.in_(user.roles)).all()
         if len(db_roles) != len(user.roles):
             #HANDLE ERRORS HANDLE ERRORS
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Roles problem")
         
         # Check user existance
+        # check wath dont exists
         if (db.session.query(exists().where(User.username == user.username))):
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="username already exists on database")
         #ver documentacion pydantic response model error
@@ -129,6 +133,7 @@ def setupServerRoutes(app:FastAPI):
         db = DB(config.DbConfig)
         
         # Check product existance in DB
+        # check wath dont exists
         product_ids = [p.id for p in ventaInfo.products]
         db_products = db.session.query(Product).filter(Product.id.in_(product_ids)).all()
         if (len(product_ids) != len(db_products)):
@@ -136,6 +141,7 @@ def setupServerRoutes(app:FastAPI):
             # check specific product error
         
         # Check user in the DB
+        # check wath dont exists
         if (not db.session.query(exists().where(User.id == ventaInfo.user_id))):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user do not exist on database")
         
