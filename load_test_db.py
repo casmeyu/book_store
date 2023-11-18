@@ -1,6 +1,10 @@
 from dotenv import load_dotenv
 from datetime import datetime
 
+from sqlalchemy import create_engine
+from sqlalchemy_utils import database_exists, create_database, drop_database
+
+
 from models.product_model import Product
 
 from models.user_model import User, Rol, user_role
@@ -168,8 +172,10 @@ def insert_ventas():
         db.session.commit()
         db.CloseSession()
 
-print("Deleting all DB entries")
-delete_all()
+print("Deleting Database")
+db.DropDatabase()
+print("Creating Database")
+db.CreateDatabase()
 print("Inserting into database", config.DbConfig.name)
 insert_roles()
 insert_users()
