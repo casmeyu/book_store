@@ -3,6 +3,7 @@
 ###
 from sqlalchemy import create_engine, Connection, text, Engine, MetaData
 from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy_utils import database_exists, create_database, drop_database
 from config.config import DbConfig
 from passlib.context import CryptContext
 
@@ -31,8 +32,9 @@ class DB():
         self.host:str = config.host
         self.port:int = config.port
         self.connection:Connection = None
-        self.session:Session = None
+        self.session = None
         
+        self.CreateDatabase()
         self.OpenConnection()
         self.CloseConnection()
         self.OpenSession()
@@ -89,5 +91,47 @@ class DB():
             return None
 
     def MakeMigration(self):
-        print("Making migration")
         meta.create_all(self.__engine)
+
+    def GetAll(self, model:Base, query_options=None):
+        try:
+            print("Query all")
+            if query_options:
+                return self.session.query(model).options(query_options).all()
+            else:
+                return self.session.query(model).all()
+        except Exception as ex:
+            print("Error occurred")
+            print(ex)
+            raise ex
+
+    def GetById(self, model:Base, id:any):
+        try:
+            return self.session.query(model).get(id)
+        except Exception as ex:
+            print("Error occurred")
+            print(ex)
+            raise ex
+        
+    def Insert(self, object:Base, commit:bool=True):
+        try:
+            self.session.add(object)
+            if commit:
+                self.session.commit()
+                self.session.refresh(object)
+            else:
+                self.session.flush()
+                self.session.refresh(object)
+            return object
+        except Exception as ex:
+            print("Error occurred")
+            print(ex)
+            raise ex
+    def CreateDatabase(self):
+        if not database_exists(self.__engine.url):
+            create_database(self.__engine.url)
+            self.MakeMigration()
+
+    def DropDatabase(self):
+        if database_exists(self.__engine.url):
+            drop_database(self.__engine.url)

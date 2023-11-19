@@ -29,121 +29,116 @@ def setupServerRoutes(app:FastAPI):
         
     @app.get("/products")
     async def getAllProducts():
+        #Gets all products from db
         config = Config()
         db = DB(config.DbConfig)
-        result = db.session.query(Product).all()
-        db.CloseSession()
+        result = db.GetAll(Product)
         return(result)
     
-    # add error handling on no id on db
     @app.get("/products/{product_id}", response_model=ProductSchema)
-    async def get_product_by_id(product_id):
+    async def get_product_by_id(product_id:int):
+        #Gets a product by its id
         config = Config()
         db = DB(config.DbConfig)
-        product = db.session.query(Product).get(product_id)
+        product = db.GetById(Product, product_id)
         db.CloseSession()
+        if not product:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product doesn`t exists")
         return product
 
     @app.get("/books")
     async def getAllBooks():
+        #Gets all books
         config = Config()
         db = DB(config.DbConfig)
-        result = db.session.query(Book).all()
-        db.CloseSession()
+        result = db.GetAll(Book)
         return(result)
 
-    @app.post("/products", response_model=ProductSchema)
-    async def create_product(prod : Newproduct):
+    @app.post("/products", response_model=ProductSchema, status_code=status.HTTP_201_CREATED)
+    async def create_product(prod : ProductSchema):
         #Create a new product and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        newproduct = Product(prod.name, prod.price)
-        #define identifier to avoid duplicated entries
-        #db_productname = db.session.query(Product).filter_by(name = prod.name).first()
-        #if db_productname:
-        #    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="product already exists on db")
-        db.session.add(newproduct)
-        db.session.commit()
-        db.session.refresh(newproduct)
+        new_product = Product(prod.name, prod.price)
+        db.Insert(new_product)
         db.CloseSession()
-        product_info = ProductSchema.model_validate(newproduct)
-        return (product_info)
+        return (new_product)
 
-    # add error handling on no id on db
     @app.get("/users/{user_id}", response_model=PublicUserInfo)
     async def get_user_by_id(user_id):
+        #Gets a user by its id
         config = Config()
         db = DB(config.DbConfig)
-        user = db.session.query(User).get(user_id)
+        user = db.GetById(User, user_id)
         db.CloseSession()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User doesn`t exists")
         public_user = PublicUserInfo.model_validate(user)
         return public_user
 
     @app.get("/users", response_model=list[PublicUserInfo])
     async def get_all_users():
+        #Gets all users on db
         config = Config()
         db = DB(config.DbConfig)
-        allUsers = db.session.query(User).all()
-        publicUsers = [PublicUserInfo.model_validate(u) for u in allUsers]
+        users = db.GetAll(User)
+        publicUsers = [PublicUserInfo.model_validate(u) for u in users]
         return(publicUsers)
 
-    @app.post("/users", response_model=PublicUserInfo)
+    @app.post("/users", response_model=PublicUserInfo, status_code=status.HTTP_201_CREATED)
     async def create_user(user : NewUser):
+        #Create a new user and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-
         #Check roles existance
-        # check wath dont exists
         db_roles = db.session.query(Rol).filter(Rol.id.in_(user.roles)).all()
         if len(db_roles) != len(user.roles):
-            #HANDLE ERRORS HANDLE ERRORS
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Roles problem")
-        
+            fail_id = []
+            for rol_id in user.roles:
+                if rol_id not in [r.id for r in db_roles]:
+                    fail_id.append(rol_id)        
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Roles problem, the next roles do not exist: {fail_id}")
         # Check user existance
-        # check wath dont exists
-        if (db.session.query(exists().where(User.username == user.username))):
+        if (db.session.query(User).where(User.username == user.username).first()):
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="username already exists on database")
         #ver documentacion pydantic response model error
 
         hash_password = Hasher.get_hash_password(user.password)
         new_user = User(user.username, hash_password, str(datetime.now()), True)
         new_user.roles = db_roles
-        
-        db.session.add(new_user)
-        db.session.commit()
-        db.session.refresh(new_user)
+        db.Insert(new_user)
         db.CloseSession()
-        
-        user_info = PublicUserInfo.model_validate(new_user)
-        return(user_info)
+        publicUser = PublicUserInfo.model_validate(new_user)
+        return(publicUser)
 
     # # Ventas
     @app.get("/ventas")
     async def getAllVentas():
+        #Gets all ventas on db
         #RESPONSE MODEL RIGTH NOW!!!
         config = Config()
         db = DB(config.DbConfig)
-        ventas = db.session.query(Venta).options(joinedload(Venta.products)).all()
+        ventas = db.GetAll(Venta, joinedload(Venta.products))
         db.CloseSession()
         return ventas
 
-    @app.post("/ventas", response_model=NewVentaRequest)
+    @app.post("/ventas", response_model=NewVentaRequest, status_code=status.HTTP_201_CREATED)
     async def createVenta(ventaInfo: NewVentaRequest):
+        #Create a new venta and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        
         # Check product existance in DB
-        # check wath dont exists
         product_ids = [p.id for p in ventaInfo.products]
         db_products = db.session.query(Product).filter(Product.id.in_(product_ids)).all()
         if (len(product_ids) != len(db_products)):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="one or many products do not exist on database")
-            # check specific product error
-        
+            fail_id = []
+            for prod_id in product_ids:
+                if prod_id not in [p.id for p in db_products]:
+                    fail_id.append(prod_id)        
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Product problem, the next products do not exist: {fail_id}")
         # Check user in the DB
-        # check wath dont exists
         if (not db.session.query(exists().where(User.id == ventaInfo.user_id))):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user do not exist on database")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user doesn`t exist on database")
         
         # Calculating final price and getting the products into product_list
         product_list = []
@@ -163,9 +158,7 @@ def setupServerRoutes(app:FastAPI):
                     venta_price += p.quantity * db_p.price
 
         new_venta = Venta(ventaInfo.user_id, venta_price)
-        db.session.add(new_venta)
-        db.session.flush()
-        db.session.refresh(new_venta)
+        db.Insert(new_venta, False)
         # Add the venta_product relationshinp
         #Here we have another loop
         for item in product_list:
@@ -183,28 +176,25 @@ def setupServerRoutes(app:FastAPI):
         return(ventaInfo)
         
     
-    @app.post("/roles", response_model=Rol_pydantic)
+    @app.post("/roles", response_model=Rol_pydantic, status_code=status.HTTP_201_CREATED)
     async def create_rol(rol: Rol_pydantic):
         #Create a new rol and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        newrol = Rol(rol.name)
-        db.session.add(newrol)
-        db.session.commit()
+        new_rol = Rol(rol.name)
+        db.Insert(new_rol)
         db.CloseSession()
-        return(rol)
-        #add error handling
+        return(new_rol)
     
-    @app.post("/books", response_model=Book_pydantic)
+    @app.post("/books", response_model=Book_pydantic, status_code=status.HTTP_201_CREATED)
     async def create_book(book : Book_pydantic):
         #Create a new book and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        newbook = Book(book.isbn, book.title, book.author, book.publisher, book.price)
-        db.session.add(newbook)
-        db.session.commit()
+        new_book = Book(book.isbn, book.title, book.author, book.publisher, book.price)
+        db.Insert(new_book)
         db.CloseSession()
-        return(book)
+        return(new_book)
 
 def createServer():
     config = Config()
