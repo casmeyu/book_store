@@ -1,13 +1,9 @@
 from dotenv import load_dotenv
 from datetime import datetime
 
-from sqlalchemy import create_engine
-from sqlalchemy_utils import database_exists, create_database, drop_database
-
-
 from models.product_model import Product
 
-from models.user_model import User, Rol, user_role
+from models.user_model import User, Rol
 from models.Venta import Venta, venta_product
 
 from database.database import meta, DB, Hasher
