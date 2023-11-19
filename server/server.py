@@ -55,7 +55,7 @@ def setupServerRoutes(app:FastAPI):
         return(result)
 
     @app.post("/products", response_model=ProductSchema, status_code=status.HTTP_201_CREATED)
-    async def create_product(prod : ProductSchema):
+    async def create_product(prod : Newproduct):
         #Create a new product and save it in the database
         config = Config()
         db = DB(config.DbConfig)
