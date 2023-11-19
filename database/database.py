@@ -27,7 +27,7 @@ class DB():
     def __init__(self, config:DbConfig):
         self.__config:DbConfig = config # __ means private attribute, only the instance it self can acces it
         self.__connection_string:str = f"mysql+mysqlconnector://{config.usr}:{config.pwd}@{config.host}:{config.port}/{config.name}"
-        self.__engine:Engine = create_engine(self.__connection_string, echo=True)
+        self.__engine:Engine = create_engine(self.__connection_string, echo=False)
         self.name:str = config.name
         self.host:str = config.host
         self.port:int = config.port
@@ -61,7 +61,7 @@ class DB():
     # Opens a session to the database based on the ENV VARIABLES
     def OpenSession(self):
         try:
-            SessionClass = sessionmaker(bind=self.__engine)
+            SessionClass = sessionmaker(bind=self.__engine, autoflush=False, autocommit=False)
             self.session = SessionClass()
             return True
         except Exception as ex:
