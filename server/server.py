@@ -39,7 +39,7 @@ def setupServerRoutes(app:FastAPI):
         return(result)
     
     @app.get("/products/{product_id}", response_model=ProductSchema)
-    async def get_product_by_id():
+    async def get_product_by_id(product_id:int):
         config = Config()
         db = DB(config.DbConfig)
         product = db.session.query(Product).get(product_id)
