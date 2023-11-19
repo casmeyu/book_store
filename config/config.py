@@ -11,7 +11,7 @@ class DbConfig:
         self.usr = os.getenv("DB_USERNAME")
         self.pwd = os.getenv("DB_PASSWORD")
         self.host = os.getenv("DB_HOST")
-        self.port = os.getenv("DB_PORT")
+        self.port = int(os.getenv("DB_PORT")) if os.getenv("DB_PORT") else 3306
         self.name = os.getenv("DB_NAME")
 
 
