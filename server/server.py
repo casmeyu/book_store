@@ -1,10 +1,10 @@
 from fastapi import FastAPI, HTTPException, status
-from sqlalchemy import select, insert, exists
+from sqlalchemy import select, insert, exists, update
 from database.database import DB
 from sqlalchemy.orm import joinedload
 from config.config import Config
 from models.Venta import Venta, Product, venta_product
-from schema.product_schema import ProductSchema, Newproduct
+from schema.product_schema import ProductSchema, Newproduct, UpdateProductStock
 from models.user_model import User
 from schema.user_schema import NewUser, PublicUserInfo
 from models.user_model import Rol
@@ -46,24 +46,33 @@ def setupServerRoutes(app:FastAPI):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product doesn`t exists")
         return product
 
-    @app.get("/books")
-    async def getAllBooks():
-        #Gets all books
-        config = Config()
-        db = DB(config.DbConfig)
-        result = db.GetAll(Book)
-        return(result)
-
     @app.post("/products", response_model=ProductSchema, status_code=status.HTTP_201_CREATED)
     async def create_product(prod : Newproduct):
         #Create a new product and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        new_product = Product(prod.name, prod.price)
+        new_product = Product(prod.name, prod.price, prod.quantity)
         db.Insert(new_product)
         db.CloseSession()
         return (new_product)
-
+    
+    @app.put("/products/{product_id}", response_model=UpdateProductStock)
+    async def update_product_quantity(product_id:int, new_quantity:int):
+        #Update product quantity
+        config = Config()
+        db = DB(config.DbConfig)
+        updated_product = db.session.query(Product).where(Product.id == product_id).update({"quantity": new_quantity})
+        print("print1")
+        print(updated_product)
+        db.session.commit()
+        print("print2")
+        print(updated_product)
+        db.CloseSession()
+        print("print3")
+        print(updated_product)
+        return (updated_product)
+        
+    
     @app.get("/users/{user_id}", response_model=PublicUserInfo)
     async def get_user_by_id(user_id):
         #Gets a user by its id
@@ -196,6 +205,14 @@ def setupServerRoutes(app:FastAPI):
         db.CloseSession()
         return(new_book)
 
+    @app.get("/books")
+    async def getAllBooks():
+        #Gets all books
+        config = Config()
+        db = DB(config.DbConfig)
+        result = db.GetAll(Book)
+        return(result)
+    
 def createServer():
     config = Config()
     app = FastAPI()
