@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from sqlalchemy import Connection, text, select, insert
-from datetime import datetime
 
-from database.database import DB
+from fastapi import FastAPI, HTTPException, status
 from config.config import Config
-from models.product_model import Product
+from database.database import DB
+from datetime import datetime
 
 class Server():
     def __init__(self, config:Config):
