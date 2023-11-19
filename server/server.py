@@ -1,17 +1,14 @@
-from fastapi import FastAPI, status
+from fastapi import FastAPI, HTTPException, status
+from sqlalchemy import select, insert, exists
 from database.database import DB
-############3
-from sqlalchemy import select, insert, create_engine, exists
 from sqlalchemy.orm import joinedload
-##########3333
 from config.config import Config
 from models.Venta import Venta, Product, venta_product
-from schema.product_schema import ProductSchema
-from models.user_model import User, user_role
-from schema.user_schema import User_pydantic, NewUser, PublicUserInfo
+from schema.product_schema import ProductSchema, Newproduct
+from models.user_model import User
+from schema.user_schema import NewUser, PublicUserInfo
 from models.user_model import Rol
 from schema.rol_schema import Rol_pydantic
-
 from schema.venta_schema import VentaSchema, NewVentaRequest, FinalProductOrder
 from models.book_model import Book
 from schema.book_schema import Book_pydantic
@@ -32,6 +29,7 @@ def setupServerRoutes(app:FastAPI):
         
     @app.get("/products")
     async def getAllProducts():
+        #Gets all products from db
         config = Config()
         db = DB(config.DbConfig)
         result = db.GetAll(Product)
@@ -39,21 +37,25 @@ def setupServerRoutes(app:FastAPI):
     
     @app.get("/products/{product_id}", response_model=ProductSchema)
     async def get_product_by_id(product_id:int):
+        #Gets a product by its id
         config = Config()
         db = DB(config.DbConfig)
         product = db.GetById(Product, product_id)
         db.CloseSession()
+        if not product:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product doesn`t exists")
         return product
 
     @app.get("/books")
     async def getAllBooks():
+        #Gets all books
         config = Config()
         db = DB(config.DbConfig)
         result = db.GetAll(Book)
         return(result)
 
     @app.post("/products", response_model=ProductSchema, status_code=status.HTTP_201_CREATED)
-    async def create_product(prod : ProductSchema):
+    async def create_product(prod : Newproduct):
         #Create a new product and save it in the database
         config = Config()
         db = DB(config.DbConfig)
@@ -64,45 +66,56 @@ def setupServerRoutes(app:FastAPI):
 
     @app.get("/users/{user_id}", response_model=PublicUserInfo)
     async def get_user_by_id(user_id):
+        #Gets a user by its id
         config = Config()
         db = DB(config.DbConfig)
         user = db.GetById(User, user_id)
         db.CloseSession()
-        public_user = PublicUserInfo.from_orm(user)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User doesn`t exists")
+        public_user = PublicUserInfo.model_validate(user)
         return public_user
 
     @app.get("/users", response_model=list[PublicUserInfo])
     async def get_all_users():
+        #Gets all users on db
         config = Config()
         db = DB(config.DbConfig)
         users = db.GetAll(User)
-        publicUsers = [PublicUserInfo.from_orm(u) for u in users]
+        publicUsers = [PublicUserInfo.model_validate(u) for u in users]
         return(publicUsers)
 
     @app.post("/users", response_model=PublicUserInfo, status_code=status.HTTP_201_CREATED)
     async def create_user(user : NewUser):
+        #Create a new user and save it in the database
         config = Config()
         db = DB(config.DbConfig)
+        #Check roles existance
+        db_roles = db.session.query(Rol).filter(Rol.id.in_(user.roles)).all()
+        if len(db_roles) != len(user.roles):
+            fail_id = []
+            for rol_id in user.roles:
+                if rol_id not in [r.id for r in db_roles]:
+                    fail_id.append(rol_id)        
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Roles problem, the next roles do not exist: {fail_id}")
+        # Check user existance
+        if (db.session.query(User).where(User.username == user.username).first()):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="username already exists on database")
+        #ver documentacion pydantic response model error
 
         hash_password = Hasher.get_hash_password(user.password)
         new_user = User(user.username, hash_password, str(datetime.now()), True)
-        db_roles = db.session.query(Rol).filter(Rol.id.in_(user.roles)).all()
-        #ver documentacion pydantic response model error
-        #Check roles existance only by length comparation
-        if len(db_roles) != len(user.roles):
-            #HANDLE ERRORS HANDLE ERRORS
-            print("ERROR FATAL FALTAN O SOBRAN ROLES")
-            return PublicUserInfo(username="ALGO MAL CON LOS ROLES AMIGO", is_active=False)
-            
         new_user.roles = db_roles
         db.Insert(new_user)
         db.CloseSession()
-        publicUser = PublicUserInfo.from_orm(new_user)
+        publicUser = PublicUserInfo.model_validate(new_user)
         return(publicUser)
 
     # # Ventas
     @app.get("/ventas")
     async def getAllVentas():
+        #Gets all ventas on db
+        #RESPONSE MODEL RIGTH NOW!!!
         config = Config()
         db = DB(config.DbConfig)
         ventas = db.GetAll(Venta, joinedload(Venta.products))
@@ -111,20 +124,21 @@ def setupServerRoutes(app:FastAPI):
 
     @app.post("/ventas", response_model=NewVentaRequest, status_code=status.HTTP_201_CREATED)
     async def createVenta(ventaInfo: NewVentaRequest):
+        #Create a new venta and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        
         # Check product existance in DB
         product_ids = [p.id for p in ventaInfo.products]
         db_products = db.session.query(Product).filter(Product.id.in_(product_ids)).all()
         if (len(product_ids) != len(db_products)):
-            print("ERROR no estan los products")
-            # HANDLE ERRORS HANDLE ERRORS
-        
+            fail_id = []
+            for prod_id in product_ids:
+                if prod_id not in [p.id for p in db_products]:
+                    fail_id.append(prod_id)        
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Product problem, the next products do not exist: {fail_id}")
         # Check user in the DB
         if (not db.session.query(exists().where(User.id == ventaInfo.user_id))):
-            print("User does not exist")
-            # HANDLE ERRORS HANDLE ERRORS
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user doesn`t exist on database")
         
         # Calculating final price and getting the products into product_list
         product_list = []
@@ -148,7 +162,6 @@ def setupServerRoutes(app:FastAPI):
         # Add the venta_product relationshinp
         #Here we have another loop
         for item in product_list:
-            print("Adding ", item["product"].name)
             db.session.execute(venta_product.insert().values(
                 venta_id=new_venta.id,
                 product_id=item["product"].id,
@@ -156,8 +169,10 @@ def setupServerRoutes(app:FastAPI):
                 price=item["product"].price
                 )
             )
-        db.session.commit()
+        db.session.commit()      
+        new_venta = db.session.query(Venta).options(joinedload(Venta.products)).where(Venta.id == new_venta.id)
         db.CloseSession()
+        # TRANSFORM VENTA TO PYDANTIC SCHEMA!!!
         return(ventaInfo)
         
     
