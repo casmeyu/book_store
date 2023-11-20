@@ -39,22 +39,22 @@ The value of the `Config` attributes is fetched from the `.env` file.
 #### Config class structure
 ```python
 {
-	"AppConfig": {
-		"name" : str,
-		"host" : str,
-		"port" : int
-	},
-	"DbConfig": {
-		"usr"  : str,
-		"pwd"  : str,
-		"host" : str,
-		"port" : int,
-		"name" : str
-	}
+  "AppConfig": {
+    "name" : str,
+    "host" : str,
+    "port" : int
+  },
+  "DbConfig": {
+    "usr"  : str,
+    "pwd"  : str,
+    "host" : str,
+    "port" : int,
+    "name" : str
+  }
 }
 ```
 
-#### Example of Config instantiation
+#### Config instantiation
 ```python
 from config.config import Config
 
@@ -66,7 +66,7 @@ The database module provides a `DB` class that is an abstraction that uses the `
 The `DB` class must be initialized with a `DbConfig` in order to establish the parameters that are used to connect to the database.
 This class also provides basic functions like `Insert`, `GetAll` and `GetById` that can be used by any of the `SQLAlchemy` models.
 
-#### Example of DB instantiation
+#### DB instantiation
 ```python
 from config.config import Config
 from database.database import DB
@@ -79,7 +79,7 @@ db = DB(config.DbConfig)
 `DB` class provides some basic functions to interact with `SQLAlchemy` models.
 In this examples we will use an example model to demonstrate the function executions.
 
-##### Example Model
+##### Example model
 ```python
 from database.database import Base
 
@@ -89,12 +89,12 @@ class ExampleModel(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     name = Column(String(50), nullable=False, unique=True)
 
-	def __init__(self, name:str, description:str):
-		self.name = name
-		self.description = description
+    def __init__(self, name:str, description:str):
+        self.name = name
+        self.description = description
 
-	def __rpr__(self):
-		return f"<ExampleModel id={self.id}, name="{self.name}">
+    def __rpr__(self):
+        return f"<ExampleModel id={self.id}, name="{self.name}">
 ```
 
 ##### Insert
@@ -128,7 +128,7 @@ print(by_id) #<ExampleModel id=1, name="my example">
 ```
 
 #### GetAll
-GetById expects a `SQLAlchemy` model and an returns a `list` containing all the entries for said model.
+GetAll expects a `SQLAlchemy` model and an returns a `list` containing all the entries for said model.
 
 ```python
 from config.config import Config
