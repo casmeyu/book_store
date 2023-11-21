@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import HTTPException, status
 from sqlalchemy import exists
 from sqlalchemy.orm import joinedload
 from datetime import datetime
@@ -9,13 +9,13 @@ from database.database import DB, Hasher
 
 # Database Models
 from models.product_model import Product
-from models.user_model import User, Rol, user_role
+from models.user_model import User, Rol
 from models.Venta import Venta, venta_product
 from models.book_model import Book
 # Pydantic schemas
-from schema.product_schema import ProductSchema, NewProduct
+from schema.product_schema import ProductSchema, NewProduct, UpdatedStock, UpdateProductStock
 from schema.user_schema import PublicUserInfo, NewUser
-from schema.venta_schema import VentaSchema, NewVentaRequest
+from schema.venta_schema import NewVentaRequest
 from schema.rol_schema import Rol_pydantic
 from schema.book_schema import Book_pydantic
 
@@ -51,26 +51,39 @@ def setupServerRoutes(server:Server, config:Config):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product doesn`t exists")
         return product
 
-    @app.get("/books")
-    async def getAllBooks():
-        #Gets all books
-        config = Config()
-        db = DB(config.DbConfig)
-        result = db.GetAll(Book)
-        return(result)
 
     @app.post("/products", response_model=ProductSchema, status_code=status.HTTP_201_CREATED)
     async def create_product(prod : NewProduct):
         #Create a new product and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        print (prod.quantity)
         if prod.quantity < 0:
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="quantity cant be negative")
         new_product = Product(prod.name, prod.price, prod.quantity)
+        print(new_product)
         db.Insert(new_product)
         db.CloseSession()
         return (new_product)
+    
+    @app.patch("/products/{product_id}", response_model=UpdateProductStock, response_model_exclude_none=True, status_code=status.HTTP_200_OK)
+    async def update_stock(prod:UpdateProductStock):
+        #Update product quantity
+        config = Config()
+        db = DB(config.DbConfig)
+        print(prod)
+        db_prod = db.session.query(Product).where(prod.id == Product.id).first()
+        print(db_prod)
+        #check prod exist?
+        prod_data = prod.dict(exclude_unset=True)
+        for key, value in prod_data.items():
+            setattr(db_prod, key, value)
+        db.session.add(db_prod)
+        print(db_prod)
+        db.session.commit()
+        db.CloseSession()
+        return ()
+        
+        
 
     @app.get("/users/{user_id}", response_model=PublicUserInfo)
     async def get_user_by_id(user_id):
@@ -193,6 +206,14 @@ def setupServerRoutes(server:Server, config:Config):
         db.Insert(new_rol)
         db.CloseSession()
         return(new_rol)
+    
+    @app.get("/books")
+    async def getAllBooks():
+        #Gets all books
+        config = Config()
+        db = DB(config.DbConfig)
+        result = db.GetAll(Book)
+        return(result)
     
     @app.post("/books", response_model=Book_pydantic, status_code=status.HTTP_201_CREATED)
     async def create_book(book : Book_pydantic):
