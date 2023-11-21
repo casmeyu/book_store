@@ -2,7 +2,7 @@
 # This Module has the responsability to Open and Close connections to the database
 ###
 from sqlalchemy import create_engine, Connection, text, Engine, MetaData
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import Session, sessionmaker, declarative_base
 from sqlalchemy_utils import database_exists, create_database, drop_database
 from config.config import DbConfig
 from passlib.context import CryptContext
@@ -27,12 +27,12 @@ class DB():
     def __init__(self, config:DbConfig):
         self.__config:DbConfig = config # __ means private attribute, only the instance it self can acces it
         self.__connection_string:str = f"mysql+mysqlconnector://{config.usr}:{config.pwd}@{config.host}:{config.port}/{config.name}"
-        self.__engine:Engine = create_engine(self.__connection_string, echo=True)
+        self.__engine:Engine = create_engine(self.__connection_string, echo=False)
         self.name:str = config.name
         self.host:str = config.host
         self.port:int = config.port
         self.connection:Connection = None
-        self.session = None
+        self.session:Session = None
         
         self.CreateDatabase()
         self.OpenConnection()
@@ -61,8 +61,8 @@ class DB():
     # Opens a session to the database based on the ENV VARIABLES
     def OpenSession(self):
         try:
-            Session = sessionmaker(bind=self.__engine)
-            self.session = Session()
+            SessionClass = sessionmaker(bind=self.__engine, autoflush=False, autocommit=False)
+            self.session = SessionClass()
             return True
         except Exception as ex:
             print("[DATABASE] (OpenSession) - An error occurred while opening session to the database", ex)
@@ -84,7 +84,7 @@ class DB():
             db_tables = self.session.execute(text("SHOW TABLES;"))
             for row in db_tables.all():
                 result.append(row._data[0])
-                
+            self.CloseSession()
             return result
         except Exception as ex:
             print("[Database] (GetDatabaseTables) - An error occurred while getting all the database table names", ex)
