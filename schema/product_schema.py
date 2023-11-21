@@ -8,7 +8,7 @@ class ProductSchema(BaseModel):
     class Config:
         from_attributes=True
         
-class Newproduct(BaseModel):
+class NewProduct(BaseModel):
     name : str
     price : float
     
