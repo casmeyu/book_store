@@ -64,7 +64,10 @@ def setupServerRoutes(server:Server, config:Config):
         #Create a new product and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        new_product = Product(prod.name, prod.price)
+        print (prod.quantity)
+        if prod.quantity < 0:
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="quantity cant be negative")
+        new_product = Product(prod.name, prod.price, prod.quantity)
         db.Insert(new_product)
         db.CloseSession()
         return (new_product)
