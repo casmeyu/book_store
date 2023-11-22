@@ -161,6 +161,7 @@ setupServerRoutes(server, config)
 
 ## Endpoints
 As of now all the endpoints are public and there is no need to login.
+
 **For the examples we will assume that the server is running in `127.0.0.1:3000`.**
 
 ### Users
