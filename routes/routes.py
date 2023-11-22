@@ -13,7 +13,7 @@ from models.user_model import User, Rol
 from models.Venta import Venta, venta_product
 from models.book_model import Book
 # Pydantic schemas
-from schema.product_schema import ProductSchema, NewProduct, UpdatedStock, UpdateProductStock
+from schema.product_schema import ProductSchema, NewProduct, UpdateStock
 from schema.user_schema import PublicUserInfo, NewUser
 from schema.venta_schema import NewVentaRequest
 from schema.rol_schema import Rol_pydantic
@@ -58,33 +58,30 @@ def setupServerRoutes(server:Server, config:Config):
         config = Config()
         db = DB(config.DbConfig)
         if prod.quantity < 0:
-            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="quantity cant be negative")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="quantity cant be negative")
         new_product = Product(prod.name, prod.price, prod.quantity)
         print(new_product)
         db.Insert(new_product)
         db.CloseSession()
         return (new_product)
     
-    @app.patch("/products/{product_id}", response_model=UpdateProductStock, response_model_exclude_none=True, status_code=status.HTTP_200_OK)
-    async def update_stock(prod:UpdateProductStock):
+    
+    @app.patch("/products/{product_id}/stock", response_model=ProductSchema, status_code=status.HTTP_200_OK)
+    async def update_stock(stock_update:UpdateStock, product_id:int):
         #Update product quantity
         config = Config()
         db = DB(config.DbConfig)
-        print(prod)
-        db_prod = db.session.query(Product).where(prod.id == Product.id).first()
-        print(db_prod)
-        #check prod exist?
-        prod_data = prod.dict(exclude_unset=True)
-        for key, value in prod_data.items():
-            setattr(db_prod, key, value)
-        db.session.add(db_prod)
-        print(db_prod)
-        db.session.commit()
+        if stock_update.quantity <= 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="quantity must be positive")
+        db_prod = db.session.query(Product).where(product_id == Product.id).first()
+        if not db_prod:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="product not found on db")
+        db_prod.quantity += stock_update.quantity
+        db.Insert(db_prod)
         db.CloseSession()
-        return ()
+        return (db_prod)
         
         
-
     @app.get("/users/{user_id}", response_model=PublicUserInfo)
     async def get_user_by_id(user_id):
         #Gets a user by its id
@@ -155,8 +152,24 @@ def setupServerRoutes(server:Server, config:Config):
             fail_id = []
             for prod_id in product_ids:
                 if prod_id not in [p.id for p in db_products]:
-                    fail_id.append(prod_id)        
+                    fail_id.append(prod_id) 
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Product problem, the next products do not exist: {fail_id}")
+        
+        #check for negative quantity?????????????????????????????
+        
+        #Check products stock
+        fail_quantity = []
+        for p in ventaInfo.products:
+            for db_p in db_products:
+                if p.id == db_p.id:
+                    if db_p.quantity < p.quantity:
+                        fail_quantity.append({"id": db_p.id, "stock": db_p.quantity, "requested" : p.quantity})
+                    else:
+                        db_p.quantity -= p.quantity
+                        db.Insert(db_p, False)
+        if fail_quantity:
+            db.CloseSession()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Quantity problem, the next products do not have enough stock: {fail_quantity}")
         # Check user in the DB
         if (not db.session.query(exists().where(User.id == ventaInfo.user_id))):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user doesn`t exist on database")
