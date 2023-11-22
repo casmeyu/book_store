@@ -158,3 +158,59 @@ config = Config()
 server = Server(config)
 setupServerRoutes(server, config)
 ```
+
+## Endpoints
+As of now all the endpoints are public and there is no need to login.
+**For the examples we will assume that the server is running in `127.0.0.1:3000`.**
+
+### Users
+#### [GET] /users
+This endpoints return a `list` containing the `PublicUserInfo` for each user in the data base.
+```bash
+curl GET '127.0.0.1:3000/users'
+# Response
+[
+  {
+    "username":"user01",
+    "is_active":true
+  },
+  {
+    "username":"user02",
+    "is_active":true
+  }
+]
+```
+
+#### [GET] /users/<id>
+This endpoints return a `json` containing the `PublicUserInfo` for the requested user.
+If the user does not exist a `404 HttpException` will be raised.
+```bash
+curl GET '127.0.0.1:3000/users/1'
+# Response
+{
+  "username":"user01",
+  "is_active":true
+}
+```
+
+#### [POST] /users
+This endpoints creates a new user and stores it in the database and it will return the `PublicUserInfo` for the new user.
+The endpoints expects a `json` containing a `NewUser` pydantic shcema.
+If the username is already taken a `409 HttpException` will be raised.
+
+```bash
+curl POST '127.0.0.1:3000/users' \
+--header 'Content-Type: application/json' \
+--data '{
+    "username":"newUser",
+    "password":"password",
+    "roles": [
+        1
+    ]
+}'
+# Response
+{
+  "username":"newUser",
+  "is_active":true
+}
+```
