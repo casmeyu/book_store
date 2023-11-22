@@ -155,7 +155,7 @@ def setupServerRoutes(server:Server, config:Config):
                     fail_id.append(prod_id) 
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Product problem, the next products do not exist: {fail_id}")
         
-        #check for negative quantity?????????????????????????????
+        #check for negative quantity!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         #Check products stock
         fail_quantity = []
