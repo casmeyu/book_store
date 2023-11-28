@@ -1,18 +1,19 @@
-from pydantic import BaseModel, NonNegativeInt
-from typing import Optional
+from pydantic import BaseModel
+from pydantic.types import PositiveFloat, PositiveInt
 
 class ProductSchema(BaseModel):
     id : int 
     name : str
-    price : float
-    quantity : int
+    price : PositiveFloat
+    quantity : PositiveInt
 
     class Config:
         from_attributes=True
         
 class NewProduct(BaseModel):
     name : str
-    price : float
+    price : PositiveFloat
+    quantity : PositiveInt
     
     class Config:
         from_attributes=True

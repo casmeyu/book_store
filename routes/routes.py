@@ -57,8 +57,7 @@ def setupServerRoutes(server:Server, config:Config):
         #Create a new product and save it in the database
         config = Config()
         db = DB(config.DbConfig)
-        if prod.quantity < 0:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="quantity cant be negative")
+        #nombre unico??????????????????????????????????????
         new_product = Product(prod.name, prod.price, prod.quantity)
         print(new_product)
         db.Insert(new_product)
@@ -154,8 +153,6 @@ def setupServerRoutes(server:Server, config:Config):
                 if prod_id not in [p.id for p in db_products]:
                     fail_id.append(prod_id) 
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Product problem, the next products do not exist: {fail_id}")
-        
-        #check for negative quantity!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         #Check products stock
         fail_quantity = []
