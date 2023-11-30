@@ -1,2 +1,5 @@
 .env*
-bookstore_env
+book_env
+book_venv
+
+__pycache__
