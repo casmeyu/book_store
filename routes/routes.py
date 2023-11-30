@@ -128,27 +128,30 @@ def setupServerRoutes(server:Server, config:Config):
     
     @app.post("/ventas", response_model=NewVentaRequest, status_code=status.HTTP_201_CREATED)
     async def createVenta(ventaInfo: NewVentaRequest):
-        #Create a new venta and save it in the database
+        # Create a new venta and save it in the database
         # Check product existance in DB
         product_ids = [p.id for p in ventaInfo.products]
         db_products = db.session.query(Product).filter(Product.id.in_(product_ids)).all()
+        products_dict = {}
+        for p in db_products:
+            products_dict[p.id] = p
+
         if (len(product_ids) != len(db_products)):
             fail_id = []
             for prod_id in product_ids:
-                if prod_id not in [p.id for p in db_products]:
+                if prod_id not in products_dict.keys():
                     fail_id.append(prod_id) 
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Product problem, the next products do not exist: {fail_id}")
         
-        #Check products stock
+        # Check products stock
         fail_quantity = []
         for p in ventaInfo.products:
-            for db_p in db_products:
-                if p.id == db_p.id:
-                    if db_p.quantity < p.quantity:
-                        fail_quantity.append({"id": db_p.id, "stock": db_p.quantity, "requested" : p.quantity})
-                    else:
-                        db_p.quantity -= p.quantity
-                        db.Insert(db_p, False)
+            db_p = products_dict[p.id]
+            if db_p.quantity < p.quantity:
+                fail_quantity.append({"id": db_p.id, "stock": db_p.quantity, "requested" : p.quantity})
+            else:
+                db_p.quantity -= p.quantity
+                db.Insert(db_p, False)
         if fail_quantity:
             db.CloseSession()
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Quantity problem, the next products do not have enough stock: {fail_quantity}")
