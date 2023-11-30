@@ -127,6 +127,7 @@ class DB():
             print("Error occurred")
             print(ex)
             raise ex
+        
     def CreateDatabase(self):
         if not database_exists(self.__engine.url):
             create_database(self.__engine.url)
