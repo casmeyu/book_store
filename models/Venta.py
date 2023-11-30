@@ -28,10 +28,10 @@ class Venta(Base):
     price:float = Column(Float, nullable=False)
     products:Mapped[List[Product]] = relationship(secondary="venta_product")
 
-    def __init__(self, user_id:int, price:float):
+    def __init__(self, user_id:int, price:float, date:datetime = datetime.utcnow()):
         self.user_id = user_id
         self.price = price
-        print(f'Created Venta\nuser {self.user_id} - {self.date}\n{self.price}')
+        self.date = date
 
     def __repr__(self):
             return f"<Venta(id={self.id}, user_id='{self.user_id}', date={self.date}, price='{self.price}, products={[prod for prod in self.products]}')>"

@@ -1,11 +1,11 @@
 from pydantic import BaseModel
-from pydantic.types import PositiveFloat, PositiveInt
+from pydantic.types import PositiveFloat, PositiveInt, NonNegativeInt
 
 class ProductSchema(BaseModel):
     id : int 
     name : str
     price : PositiveFloat
-    quantity : PositiveInt
+    quantity : NonNegativeInt
 
     class Config:
         from_attributes=True
@@ -19,5 +19,5 @@ class NewProduct(BaseModel):
         from_attributes=True
 
         
-class UpdateStock(BaseModel):
-    quantity : int
+class addStock(BaseModel):
+    quantity : PositiveInt

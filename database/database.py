@@ -27,7 +27,7 @@ class DB():
     def __init__(self, config:DbConfig):
         self.__config:DbConfig = config # __ means private attribute, only the instance it self can acces it
         self.__connection_string:str = f"mysql+mysqlconnector://{config.usr}:{config.pwd}@{config.host}:{config.port}/{config.name}"
-        self.__engine:Engine = create_engine(self.__connection_string, echo=True)
+        self.__engine:Engine = create_engine(self.__connection_string, echo=False)
         self.name:str = config.name
         self.host:str = config.host
         self.port:int = config.port

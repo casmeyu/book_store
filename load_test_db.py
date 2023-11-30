@@ -53,19 +53,23 @@ users = [
 products = [
     {
         "name": "zapallo",
-        "price": 80.0
+        "price": 80.0,
+        "quantity": 10
     },
     {
         "name": "papa",
-        "price": 40.0
+        "price": 40.0,
+        "quantity": 20
     },
     {
         "name": "tomate",
-        "price": 90.0
+        "price": 90.0,
+        "quantity": 5
     },
     {
         "name": "zanahoria",
-        "price": 30.0
+        "price": 30.0,
+        "quantity": 15
     }
 ]
 
@@ -129,7 +133,7 @@ def insert_users():
 
 def insert_products():
     for p in products:
-        product = Product(p["name"], p["price"])
+        product = Product(p["name"], p["price"], p["quantity"])
         db.session.add(product)
         db.session.commit()
 
