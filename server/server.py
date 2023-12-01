@@ -5,7 +5,7 @@ from database.database import DB
 from datetime import datetime
 
 origins = [
-"*"
+"http://127.0.0.1:5173/"
 ]
 
 class Server():
