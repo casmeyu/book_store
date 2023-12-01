@@ -1,5 +1,10 @@
 .env*
 book_env
 book_venv
+Include
+Lib
+Scripts
+pyvenv.cfg
+
 
 __pycache__
