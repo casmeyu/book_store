@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
-
 class User_pydantic(BaseModel):
     id : Optional[int]
     username : str
@@ -24,3 +23,7 @@ class PublicUserInfo(BaseModel):
     is_active : bool
     class Config:
         from_attributes=True
+
+class UserLogin(BaseModel):
+    username: str
+    password: str

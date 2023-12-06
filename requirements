@@ -6,3 +6,5 @@ python-dotenv
 sqlalchemy
 sqlalchemy-utils
 bcrypt
+pytest
+pytest-mock
