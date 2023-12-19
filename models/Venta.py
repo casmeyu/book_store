@@ -1,14 +1,11 @@
 from sqlalchemy import Table, Column, Integer, Float, ForeignKey, DateTime
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship, Mapped
-from sqlalchemy.ext.associationproxy import association_proxy
-from schema.venta_schema import FinalProductOrder
+from sqlalchemy.orm import relationship, Mapped
 from models.product_model import Product
-from database.database import meta
+from database.database import Base
 from datetime import datetime
 from typing import List
 
 
-Base = declarative_base(metadata=meta) # Use a single BASE instead of importing meta
 
 venta_product = Table(
     "venta_product",

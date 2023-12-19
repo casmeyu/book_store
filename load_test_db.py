@@ -29,7 +29,7 @@ roles = [
 users = [
     {
         "username": "casmeyu",
-        "password": Hasher.get_hash_password("pass"),
+        "hashed_password": Hasher.get_hash_password("pass"),
         "roles": [
             1,
             2
@@ -37,14 +37,14 @@ users = [
     },
     {
         "username": "eric",
-        "password": Hasher.get_hash_password("pass"),
+        "hashed_password": Hasher.get_hash_password("pass"),
         "roles": [
             1,
         ]
     },
     {
         "username": "laura",
-        "password": Hasher.get_hash_password("pass"),
+        "hashed_password": Hasher.get_hash_password("pass"),
         "roles": [
             3
         ]
@@ -125,7 +125,7 @@ def insert_roles():
 
 def insert_users():
     for u in users:
-        user = User(u["username"], u["password"], datetime.utcnow(), True)
+        user = User(u["username"], u["hashed_password"], datetime.utcnow(), True)
         db_roles = db.session.query(Rol).filter(Rol.id.in_(u["roles"])).all()
         user.roles = db_roles
         db.session.add(user)

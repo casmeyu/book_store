@@ -1,7 +1,11 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Depends
 from sqlalchemy import exists
 from sqlalchemy.orm import joinedload
-from datetime import datetime
+from datetime import datetime, timedelta
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from typing import Annotated
+from jose import JWTError, jwt
+import asyncio
 
 from config.config import Config
 from server.server import Server
@@ -14,14 +18,119 @@ from models.Venta import Venta, venta_product
 from models.book_model import Book
 # Pydantic schemas
 from schema.product_schema import ProductSchema, NewProduct, addStock
-from schema.user_schema import PublicUserInfo, NewUser
+from schema.user_schema import PublicUserInfo, NewUser, UserInDb, User_pydantic
 from schema.venta_schema import NewVentaRequest
 from schema.rol_schema import Rol_pydantic
 from schema.book_schema import Book_pydantic
+from schema.token_schema import Token, TokenData
 
 def setupServerRoutes(server:Server, config:Config):
     app = server.app
     db = server.db
+
+    ###### authentacation #######
+    SECRET_KEY = "a9b53bc7611de21f4911ea4174578cab43ff70b7892c85d1160060f020880e0d"
+    ALGORITHM = "HS256"
+    EXPIRATION_MINUTES = 20
+    
+    
+    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+    
+    
+    def get_user(username: str):
+        userindb = db.GetUserByUsername(User, username)
+        if not userindb:
+            return False
+        return userindb
+        
+        
+    def authenticate_user(username: str, password: str):
+        user = get_user(username)
+        if not user:
+            return False
+        if not Hasher.verify_password(password, user.hashed_password):
+            return False
+        return user
+    
+    
+    def create_access_token(data: dict, expires_delta: timedelta or None = None):
+        to_encode = data.copy()
+        if expires_delta:
+           expire = datetime.utcnow() + expires_delta
+        else: 
+            expire = datetime.utcnow() + timedelta(minutes=15)
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+    
+    
+    def get_current_user(token: str = Depends(oauth2_scheme)):
+        print ("corriendo gcu para el token" + token)
+        credential_exeption = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Could not validate credentials",
+        )
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            print ("esto es el payload", payload)
+            username: str = payload.get("sub")
+            if username is None:
+                raise credential_exeption
+            token_data = TokenData(username = username)
+        except JWTError:
+            raise credential_exeption
+        user = get_user(username=token_data.username)
+        if user is None: 
+            raise credential_exeption
+        return user
+    
+    
+    def get_current_active_user(current_user: Annotated[User, Depends(get_current_user)]):
+        print ("current user es", current_user)
+        asyncio.wait_for(current_user, 10)
+        print ("current user es", current_user)
+        if current_user.is_active == False:
+            raise HTTPException(status_code=400, detail="Inactive user")
+        return current_user
+    
+    
+    @app.post("/token", response_model=Token)
+    async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+        
+        user = authenticate_user(form_data.username, form_data.password)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail="Incorrect username or password", 
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        access_token_expires = timedelta(minutes=EXPIRATION_MINUTES)     
+        access_token = create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires
+        )
+        print ("asd yes")
+        return {"access_token": access_token, "token_type": "bearer"}
+    
+    
+    @app.get("/users/me", response_model=User_pydantic)
+    async def read_users_me(
+        current_user: Annotated[User, Depends(get_current_active_user)]
+    ):
+        print ("tamo en la ruta mono", current_user)
+        current_user = User_pydantic.model_validate(current_user)
+        return current_user
+
+
+    @app.get("/users/me/items/")
+    async def read_own_items(
+        current_user: Annotated[User, Depends(get_current_active_user)]
+    ):
+        return [{"item_id": "Foo", "owner": current_user.username}]
+    
+    ##############--------------################
+    @app.get("/AutTest")
+    async def read_items(token: Annotated[str, Depends(oauth2_scheme)]):
+        return {"token": token}
 
     @app.get("/")
     async def root():
@@ -53,7 +162,7 @@ def setupServerRoutes(server:Server, config:Config):
         #Create a new product and save it in the database
         
         #nombre unico??????????????????????????????????????
-        new_product = Product(prod.name, prod.price, prod.quantity)
+        new_product = Product(prod.username, prod.price, prod.quantity)
         db.Insert(new_product)
         db.CloseSession()
         return (new_product)
@@ -195,7 +304,7 @@ def setupServerRoutes(server:Server, config:Config):
     @app.post("/roles", response_model=Rol_pydantic, status_code=status.HTTP_201_CREATED)
     async def create_rol(rol: Rol_pydantic):
         #Create a new rol and save it in the database
-        new_rol = Rol(rol.name)
+        new_rol = Rol(rol.username)
         db.Insert(new_rol)
         db.CloseSession()
         return(new_rol)

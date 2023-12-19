@@ -20,8 +20,8 @@ class Hasher:
         return pwd_context.hash(plain_password)
     
     @staticmethod
-    def verify_password(plain_password, hash_password):
-        return pwd_context.verify(plain_password, hash_password)
+    def verify_password(password, hashed_password):
+        return pwd_context.verify(password, hashed_password)
 
 class DB():    
     def __init__(self, config:DbConfig):
@@ -108,6 +108,16 @@ class DB():
     def GetById(self, model:Base, id:any):
         try:
             return self.session.query(model).get(id)
+        except Exception as ex:
+            print("Error occurred")
+            print(ex)
+            raise ex
+        
+    def GetUserByUsername(self, model:Base, username:str):
+        try:
+            asd = self.session.query(model).filter_by(username = username).first()
+            print (asd)
+            return asd
         except Exception as ex:
             print("Error occurred")
             print(ex)
