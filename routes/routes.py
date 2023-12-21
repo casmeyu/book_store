@@ -18,17 +18,20 @@ from models.Venta import Venta, venta_product
 from models.book_model import Book
 # Pydantic schemas
 from schema.product_schema import ProductSchema, NewProduct, addStock
-from schema.user_schema import PublicUserInfo, NewUser, UserInDb, User_pydantic
+from schema.user_schema import PublicUserInfo, NewUser, UserInDb, UserSchema
 from schema.venta_schema import NewVentaRequest
-from schema.rol_schema import Rol_pydantic
-from schema.book_schema import Book_pydantic
-from schema.token_schema import Token, TokenData
+from schema.rol_schema import RolSchema
+from schema.book_schema import BookSchema
+from schema.token_schema import TokenSchema, TokenData
 
 def setupServerRoutes(server:Server, config:Config):
     app = server.app
     db = server.db
 
     ###### authentacation #######
+    
+    #this data shouldnt not be hear !!!!!!!!!!!!!!!!!!!!!!!!!
+    
     SECRET_KEY = "a9b53bc7611de21f4911ea4174578cab43ff70b7892c85d1160060f020880e0d"
     ALGORITHM = "HS256"
     EXPIRATION_MINUTES = 20
@@ -38,23 +41,29 @@ def setupServerRoutes(server:Server, config:Config):
     
     
     def get_user(username: str):
+        #gets a certain user from db if it exists
         userindb = db.GetUserByUsername(User, username)
         if not userindb:
-            return False
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found on db")
+        print ("GU")
         return userindb
         
         
     def authenticate_user(username: str, password: str):
+        #Authenticates the user using his hashed password
         user = get_user(username)
         if not user:
-            return False
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Missing user")
         if not Hasher.verify_password(password, user.hashed_password):
-            return False
+            # change status code to be more specific
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication problem")
         return user
     
     
     def create_access_token(data: dict, expires_delta: timedelta or None = None):
+        #Creates a token
         to_encode = data.copy()
+        #Must review this
         if expires_delta:
            expire = datetime.utcnow() + expires_delta
         else: 
@@ -65,14 +74,13 @@ def setupServerRoutes(server:Server, config:Config):
     
     
     def get_current_user(token: str = Depends(oauth2_scheme)):
-        print ("corriendo gcu para el token" + token)
+        #??
         credential_exeption = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
             detail="Could not validate credentials",
         )
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            print ("esto es el payload", payload)
             username: str = payload.get("sub")
             if username is None:
                 raise credential_exeption
@@ -86,16 +94,17 @@ def setupServerRoutes(server:Server, config:Config):
     
     
     def get_current_active_user(current_user: Annotated[User, Depends(get_current_user)]):
-        print ("current user es", current_user)
+        #Checks if the user is active
         asyncio.wait_for(current_user, 10)
-        print ("current user es", current_user)
+        print ("current user2 es", current_user)
         if current_user.is_active == False:
             raise HTTPException(status_code=400, detail="Inactive user")
         return current_user
     
     
-    @app.post("/token", response_model=Token)
+    @app.post("/token", response_model=TokenSchema)
     async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+        #????
         
         user = authenticate_user(form_data.username, form_data.password)
         if not user:
@@ -112,12 +121,13 @@ def setupServerRoutes(server:Server, config:Config):
         return {"access_token": access_token, "token_type": "bearer"}
     
     
-    @app.get("/users/me", response_model=User_pydantic)
+    @app.get("/users/me", response_model=UserSchema)
+    #Gets the currently authenticated user
     async def read_users_me(
         current_user: Annotated[User, Depends(get_current_active_user)]
     ):
         print ("tamo en la ruta mono", current_user)
-        current_user = User_pydantic.model_validate(current_user)
+        current_user = UserSchema.model_validate(current_user, from_attributes=True)
         return current_user
 
 
@@ -138,6 +148,7 @@ def setupServerRoutes(server:Server, config:Config):
 
     @app.get("/api/db/tables")
     async def getDbTables():
+        #gets all db tables
         db_tables = db.GetDatabaseTables()
         return db_tables
 
@@ -162,7 +173,7 @@ def setupServerRoutes(server:Server, config:Config):
         #Create a new product and save it in the database
         
         #nombre unico??????????????????????????????????????
-        new_product = Product(prod.username, prod.price, prod.quantity)
+        new_product = Product(prod.name, prod.price, prod.quantity)
         db.Insert(new_product)
         db.CloseSession()
         return (new_product)
@@ -301,10 +312,10 @@ def setupServerRoutes(server:Server, config:Config):
         return(ventaInfo)
         
     
-    @app.post("/roles", response_model=Rol_pydantic, status_code=status.HTTP_201_CREATED)
-    async def create_rol(rol: Rol_pydantic):
+    @app.post("/roles", response_model=RolSchema, status_code=status.HTTP_201_CREATED)
+    async def create_rol(rol: RolSchema):
         #Create a new rol and save it in the database
-        new_rol = Rol(rol.username)
+        new_rol = Rol(rol.name)
         db.Insert(new_rol)
         db.CloseSession()
         return(new_rol)
@@ -315,8 +326,8 @@ def setupServerRoutes(server:Server, config:Config):
         result = db.GetAll(Book)
         return(result)
     
-    @app.post("/books", response_model=Book_pydantic, status_code=status.HTTP_201_CREATED)
-    async def create_book(book : Book_pydantic):
+    @app.post("/books", response_model=BookSchema, status_code=status.HTTP_201_CREATED)
+    async def create_book(book : BookSchema):
         #Create a new book and save it in the database
         new_book = Book(book.isbn, book.title, book.author, book.publisher, book.price)
         db.Insert(new_book)

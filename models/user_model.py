@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Table, Integer, String, Boolean, DateTime
 from database.database import Base
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 from database.database import Base
 from datetime import datetime
 
@@ -37,7 +37,7 @@ class Rol(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
     name = Column(String(200), nullable=False)
-    users = relationship("User", secondary="user_role", back_populates="roles")
+    users:Mapped[User] = relationship("User", secondary="user_role", back_populates="roles")
 
     def __init__(self, name):
         self.name = name

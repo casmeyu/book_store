@@ -1,15 +1,15 @@
 from pydantic import BaseModel
 from typing import List, Optional
-from models.user_model import Rol
+from schema.rol_schema import RolSchema
 from datetime import datetime
 
 
-class User_pydantic(BaseModel):
+class UserSchema(BaseModel):
     id : Optional[int]
     username : str
     hashed_password : str
     created_at : datetime
-    roles : List[Rol]
+    roles : List[RolSchema]
     is_active : bool
     class Config:
         from_attributes=True
@@ -27,5 +27,5 @@ class PublicUserInfo(BaseModel):
     class Config:
         from_attributes=True
         
-class UserInDb(User_pydantic):
+class UserInDb(UserSchema):
     hashed_password : str
