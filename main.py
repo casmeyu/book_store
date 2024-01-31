@@ -5,6 +5,7 @@ from server.server import Server
 from routes.routes import setupServerRoutes
 
 load_dotenv()
+from routes.routes import setupServerRoutes
 
 def main():
     config = Config()

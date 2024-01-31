@@ -1,3 +1,4 @@
+import os
 from fastapi import HTTPException, status, Depends
 from sqlalchemy import exists
 from sqlalchemy.orm import joinedload
@@ -31,11 +32,7 @@ def setupServerRoutes(server:Server, config:Config):
     ###### authentacation #######
     
     #this data shouldnt not be hear !!!!!!!!!!!!!!!!!!!!!!!!!
-    
-    SECRET_KEY = "a9b53bc7611de21f4911ea4174578cab43ff70b7892c85d1160060f020880e0d"
-    ALGORITHM = "HS256"
-    EXPIRATION_MINUTES = 20
-    
+
     
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
     
@@ -69,7 +66,7 @@ def setupServerRoutes(server:Server, config:Config):
         else: 
             expire = datetime.utcnow() + timedelta(minutes=15)
         to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        encoded_jwt = jwt.encode(to_encode, str(os.environ.get("SERCRET_KEY")), algorithm=str(os.environ.get("ALGORITHM")))
         return encoded_jwt
     
     
@@ -80,7 +77,7 @@ def setupServerRoutes(server:Server, config:Config):
             detail="Could not validate credentials",
         )
         try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            payload = jwt.decode(token, str(os.environ.get("SERCRET_KEY")), algorithms=str(os.environ.get("ALGORITHM")))
             username: str = payload.get("sub")
             if username is None:
                 raise credential_exeption
@@ -113,7 +110,7 @@ def setupServerRoutes(server:Server, config:Config):
                 detail="Incorrect username or password", 
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        access_token_expires = timedelta(minutes=EXPIRATION_MINUTES)     
+        access_token_expires = timedelta(minutes=int(os.environ.get("EXPIRATION_MINUTES")))     
         access_token = create_access_token(
             data={"sub": user.username}, expires_delta=access_token_expires
         )
