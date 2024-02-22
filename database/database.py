@@ -115,9 +115,8 @@ class DB():
         
     def GetUserByUsername(self, model:Base, username:str):
         try:
-            asd = self.session.query(model).filter_by(username = username).first()
-            print (asd)
-            return asd
+            name_user = self.session.query(model).filter_by(username = username).first()
+            return name_user
         except Exception as ex:
             print("Error occurred")
             print(ex)

@@ -3,8 +3,8 @@ from datetime import datetime
 
 from models.product_model import Product
 
-from models.user_model import User, Rol
-from models.Venta import Venta, venta_product
+from models.user_model import User, Role
+from models.sale_model import Sale, sale_product
 
 from database.database import meta, DB, Hasher
 from config.config import Config
@@ -73,7 +73,7 @@ products = [
     }
 ]
 
-ventas = [
+sales = [
     {
         "user_id": 1,
         "products": [
@@ -118,15 +118,15 @@ def delete_all():
 
 def insert_roles():
     for r in roles:
-        rol = Rol(r["name"])
-        db.session.add(rol)
+        role = Role(r["name"])
+        db.session.add(role)
         db.session.commit()
 
 
 def insert_users():
     for u in users:
         user = User(u["username"], u["hashed_password"], datetime.utcnow(), True)
-        db_roles = db.session.query(Rol).filter(Rol.id.in_(u["roles"])).all()
+        db_roles = db.session.query(Role).filter(Role.id.in_(u["roles"])).all()
         user.roles = db_roles
         db.session.add(user)
         db.session.commit()
@@ -137,8 +137,8 @@ def insert_products():
         db.session.add(product)
         db.session.commit()
 
-def insert_ventas():
-    for v in ventas:
+def insert_sales():
+    for v in sales:
         product_ids = [p["id"] for p in v["products"]]
         db_products:[Product] = db.session.query(Product).filter(Product.id.in_(product_ids))
         final_price = 0
@@ -155,15 +155,15 @@ def insert_ventas():
                     final_price += prod["quantity"] * db_p.price
 
 
-        venta = Venta(v["user_id"], final_price)
-        db.session.add(venta)
+        sale = Sale(v["user_id"], final_price)
+        db.session.add(sale)
         db.session.flush()
-        db.session.refresh(venta)
+        db.session.refresh(sale)
         
         for item in product_list:
             print("Adding ", item["product"].name)
-            db.session.execute(venta_product.insert().values(
-                venta_id=venta.id,
+            db.session.execute(sale_product.insert().values(
+                sale_id=sale.id,
                 product_id=item["product"].id,
                 quantity=item["quantity"],
                 price=item["product"].price
@@ -181,4 +181,4 @@ insert_roles()
 insert_users()
 
 insert_products()
-insert_ventas()
+insert_sales()

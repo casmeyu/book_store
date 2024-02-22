@@ -2,10 +2,11 @@ import uvicorn
 from dotenv import load_dotenv
 from config.config import Config
 from server.server import Server
-from routes.routes import setupServerRoutes
+from routers.routes import setupServerRoutes
+
 
 load_dotenv()
-from routes.routes import setupServerRoutes
+
 
 def main():
     config = Config()
