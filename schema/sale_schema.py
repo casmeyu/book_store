@@ -3,7 +3,7 @@ from typing import List
 from schema.product_schema import ProductSchema
 from pydantic.types import PositiveInt, PositiveFloat
 
-class VentaSchema(BaseModel):
+class SaleSchema(BaseModel):
     id : int
     user_id : int
     # date : datetime = None
@@ -22,6 +22,6 @@ class ProductOrder(BaseModel): # USER REQUEST
     id : int
     quantity : PositiveInt
 
-class NewVentaRequest(BaseModel):
+class NewSaleRequest(BaseModel):
     user_id : int
     products : list[ProductOrder]

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, status
 from database.database import DB
 from schema.role_schema import RoleSchema
 from models.user_model import Role

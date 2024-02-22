@@ -21,7 +21,7 @@ class User(Base):
     hashed_password = Column(String(200), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow(), nullable=False)
     is_active = Column(Boolean, default=True)
-    roles = relationship("Rol", secondary="user_role", back_populates="users")
+    roles = relationship("Role", secondary="user_role", back_populates="users")
     
 
     def __init__(self, username, hashed_password, created_at, is_active):
@@ -32,7 +32,7 @@ class User(Base):
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', hashed_password='{self.hashed_password}', created_at='{self.created_at}', is_active='{self.is_active}'), roles='{self.roles}'>"
 
-class Rol(Base):
+class Role(Base):
     __tablename__ = "roles"
 
     id = Column(Integer, primary_key=True, nullable=False)
@@ -43,4 +43,4 @@ class Rol(Base):
         self.name = name
 
     def __repr__(self):
-        return f"<Rol(id={self.id}, name='{self.name}')>"
+        return f"<Role(id={self.id}, name='{self.name}')>"

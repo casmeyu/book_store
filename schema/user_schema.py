@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
-from schema.rol_schema import RolSchema
+from schema.role_schema import RoleSchema
 from datetime import datetime
 
 
@@ -9,7 +9,7 @@ class UserSchema(BaseModel):
     username : str
     hashed_password : str
     created_at : datetime
-    roles : List[RolSchema]
+    roles : List[RoleSchema]
     is_active : bool
     class Config:
         from_attributes=True
