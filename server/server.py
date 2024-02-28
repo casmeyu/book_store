@@ -6,6 +6,7 @@ from routers.user_routes import setupUserRoutes
 from routers.product_routes import setupProductRoutes
 from routers.sale_routes import setupSaleRoutes
 from routers.role_routes import setupRoleRoutes
+from routers.oauth2 import setupPermissions
 
 
 class Server():
@@ -17,6 +18,7 @@ class Server():
         self.app.include_router(setupProductRoutes(self.db))
         self.app.include_router(setupSaleRoutes(self.db))
         self.app.include_router(setupRoleRoutes(self.db))
+        self.app.include_router(setupPermissions(self.db))
         self.start:datetime = datetime.utcnow()
         
 

@@ -7,7 +7,7 @@ from models.user_model import Role
 
 def setupRoleRoutes(db : DB):
     
-    role_router = APIRouter(prefix= "roles")
+    role_router = APIRouter(prefix= "/roles")
     
     @role_router.post("", response_model=RoleSchema, status_code=status.HTTP_201_CREATED)
     async def create_role(role: RoleSchema):

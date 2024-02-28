@@ -1,13 +1,20 @@
 from models.user_model import User, Role
 from schema.user_schema import PublicUserInfo, NewUser
 from database.database import DB, Hasher
-from fastapi import HTTPException, status, APIRouter
+from fastapi import HTTPException, status, APIRouter, Depends
 from datetime import datetime
+from dependencies import common_parameters
+from typing import Annotated
 
 
 def setupUserRoutes(db : DB):
 
-    user_router = APIRouter(prefix = "/users")
+    user_router = APIRouter(prefix = "/users",)
+
+    @user_router.get("/test")
+    async def read_test(user: Annotated[dict, Depends(common_parameters)]):
+        return "tuvieja"
+        
 
     @user_router.get("/{user_id}", response_model=PublicUserInfo)
     async def get_user_by_id(user_id):

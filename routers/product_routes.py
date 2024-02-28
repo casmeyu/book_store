@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from schema.product_schema import ProductSchema, NewProduct, addStock
 from models.product_model import Product
 from database.database import DB
 
+
 def setupProductRoutes(db : DB):
+
 
     product_router = APIRouter(prefix= "/products")
 

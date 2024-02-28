@@ -1,26 +1,20 @@
 import os
-from fastapi import HTTPException, status, Depends
-from datetime import datetime, timedelta
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from typing import Annotated
-from jose import JWTError, jwt
-import asyncio
-from config.config import Config
-from server.server import Server
-from database.database import DB, Hasher
-# Database Models
+from fastapi import status, HTTPException, Depends, APIRouter
 from models.user_model import User
-# Pydantic schemas
-from schema.user_schema import UserSchema
+from database.database import DB, Hasher
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
 from schema.token_schema import TokenSchema, TokenData
+from schema.user_schema import UserSchema
+from datetime import datetime, timedelta
+from typing import Annotated
+import asyncio
 
-def setupServerRoutes(server:Server, config:Config):
-    app = server.db 
-    db = server.db
-
-    ###### authentacation #######
+def setupPermissions(db : DB):
     
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+    
+    auth_routes = APIRouter()
     
     def get_user(username: str):
         #gets a certain user from db if it exists
@@ -28,8 +22,7 @@ def setupServerRoutes(server:Server, config:Config):
         if not userindb:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found on db")
         return userindb
-        
-        
+            
     def authenticate_user(username: str, password: str):
         #Authenticates the user using the hashed password
         user = get_user(username)
@@ -80,7 +73,7 @@ def setupServerRoutes(server:Server, config:Config):
         return current_user
     
     
-    @app.post("/token", response_model=TokenSchema)
+    @auth_routes.post("/token", response_model=TokenSchema)
     async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
         #????
         user = authenticate_user(form_data.username, form_data.password)
@@ -97,18 +90,10 @@ def setupServerRoutes(server:Server, config:Config):
         return {"access_token": access_token, "token_type": "bearer"}
     
     
-    def get_current_user_role(required_role: str):
-        def _get_current_user_role(current_user: User = Depends(get_current_user)):
-            if current_user.role != required_role:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="No tienes los permisos necesarios para acceder a esta ruta",
-                )
-            return current_user
-        return _get_current_user_role
+
     
     
-    @app.get("/users/me", response_model=UserSchema)
+    @auth_routes.get("/users/me", response_model=UserSchema)
     #Gets the currently authenticated user
     async def read_users_me(
         current_user: Annotated[User, Depends(get_current_active_user)]
@@ -118,38 +103,23 @@ def setupServerRoutes(server:Server, config:Config):
         return current_user
 
 
-    @app.get("/users/me/items/")
+    @auth_routes.get("/users/me/items/")
     async def read_own_items(
         current_user: Annotated[User, Depends(get_current_active_user)]
     ):
         return [{"item_id": "Foo", "owner": current_user.username}]
     
+    return(auth_routes)
+    
     ##############--------------################
-    
-    @app.get("/AutTest")
-    async def read_items(token: Annotated[str, Depends(oauth2_scheme)]):
-        return {"token": token}
 
-    @app.get("/")
-    async def root():
-        return {"message": "Book store home page"}
 
-    @app.get("/api/db/tables")
-    async def getDbTables():
-        #gets all db tables
-        db_tables = db.GetDatabaseTables()
-        return db_tables
-    
-    #@app.get("/books")
-    #async def getAllBooks():
-    #    #Gets all books
-    #    result = db.GetAll(Book)
-    #    return(result)
-    #
-    #@app.post("/books", response_model=BookSchema, status_code=status.HTTP_201_CREATED)
-    #async def create_book(book : BookSchema):
-    #    #Create a new book and save it in the database
-    #    new_book = Book(book.isbn, book.title, book.author, book.publisher, book.price)
-    #    db.Insert(new_book)
-    #    db.CloseSession()
-    #    return(new_book)
+#def get_current_user_role(required_role: str):
+#    def _get_current_user_role(current_user: User = Depends(get_current_user)):
+#        if current_user.role != required_role:
+#            raise HTTPException(
+#                status_code=status.HTTP_403_FORBIDDEN,
+#                detail="No tienes los permisos necesarios para acceder a esta ruta",
+#            )
+#        return current_user
+#    return _get_current_user_role
